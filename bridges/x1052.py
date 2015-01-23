@@ -1,33 +1,34 @@
 #!   /usr/bin/env   python
 # -*- coding: utf-8 -*
 '''
-This file contains the x1052 class which is a child
-of the abstract class GenDrv (gendrvr.py)
+This file contains the x1052 class which is a child of the abstract class GenDrv (gendrvr.py)
 
-
+@file
 @date Created on Apr 24, 2014
-@author: Benoit Rat (benoit<AT>sevensols.com)
-@licence: LGPL v2.1
-@ref: http://www.ohwr.org
-@ref: http://www.sevensols.com
+@author Benoit Rat (benoit<AT>sevensols.com)
+@copyright LGPL v2.1
+@see http://www.ohwr.org
+@see http://www.sevensols.com
+@ingroup bridges
 '''
 
-##-------------------------------------------------------------------------------------------------
-##                               GNU LESSER GENERAL PUBLIC LICENSE                                |
-##                              ------------------------------------                              |
-## This source file is free software; you can redistribute it and/or modify it under the terms of |
-## the GNU Lesser General Public License as published by the Free Software Foundation; either     |
-## version 2.1 of the License, or (at your option) any later version.                             |
-## This source is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;       |
-## without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.      |
-## See the GNU Lesser General Public License for more details.                                    |
-## You should have received a copy of the GNU Lesser General Public License along with this       |
-## source; if not, download it from http://www.gnu.org/licenses/lgpl-2.1.html                     |
-##-------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------|
+#                   GNU LESSER GENERAL PUBLIC LICENSE                          |
+#                 ------------------------------------                         |
+# This source file is free software; you can redistribute it and/or modify it  |
+# under the terms of the GNU Lesser General Public License as published by the |
+# Free Software Foundation; either version 2.1 of the License, or (at your     |
+# option) any later version. This source is distributed in the hope that it    |
+# will be useful, but WITHOUT ANY WARRANTY; without even the implied warrant   |
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser   |
+# General Public License for more details. You should have received a copy of  |
+# the GNU Lesser General Public License along with this  source; if not,       |
+# download it from http://www.gnu.org/licenses/lgpl-2.1.html                   |
+#------------------------------------------------------------------------------|
 
-##-------------------------------------------------------------------------------------------------
-##                                            Import                                             --
-##-------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#                                       Import                                --
+#----------------------------------------- -------------------------------------
 # Import system modules
 import subprocess
 import os
@@ -36,8 +37,7 @@ from gendrvr import *
 
 class X1052(GenDrvr):
     '''
-    The X1052 class has been created to interface WB access using
-    the x1052 pcie driver. 
+    The X1052 class has been created to interface WB access using the x1052 pcie driver. 
     
     Currently, the read/write block data functions are not implemented 
     but they might be implemented in the next future. 
@@ -46,9 +46,11 @@ class X1052(GenDrvr):
     
     def __init__(self,LUN, show_dbg=False):
         '''
-        Constructor 
-        @param LUN the logical unit, with this driver it is not need as we should have only one 
-        WB bus on the FPGA connected to the ARM CPU
+        Constructor
+        
+        Args: 
+            LUN : the logical unit, with this driver it is not need as we should have only one WB bus on the FPGA connected to the ARM CPU
+            show_dbg : show debug info
         '''
         self.show_dbg=show_dbg
         self.load_lib("libx1052_api.so")
@@ -81,9 +83,11 @@ class X1052(GenDrvr):
     def devread(self, bar, offset, width):
         '''
         Method that do a read from the device
-        @param bar BAR used by PCIe bus
-        @param offset address within bar
-        @param width data size (1, 2, or 4 bytes)
+        
+        Args:
+            bar : BAR used by PCIe bus
+            offset : offset address within bar
+            width : width data size (1, 2, or 4 bytes)
         '''
         address = offset
         INTP = POINTER(c_uint)
@@ -99,10 +103,12 @@ class X1052(GenDrvr):
     def devwrite(self, bar, offset, width, datum):
         '''
         Method that do a write to the device
-        @param bar BAR used by PCIe bus
-        @param offset address within bar
-        @param width data size (1, 2, or 4 bytes)
-        @param datum data value that need to be written
+        
+        Args:
+            bar : BAR used by PCIe bus
+            offset : address within bar
+            width : data size (1, 2, or 4 bytes)
+            datum : data value that need to be written
         '''
         address = offset
         INTP = POINTER(c_uint)

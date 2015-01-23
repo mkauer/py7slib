@@ -1,33 +1,34 @@
 #!   /usr/bin/env   python
 # -*- coding: utf-8 -*
 '''
-This file contains the debug class FileMem
- which is a child of the abstract class GenDrv (gendrvr.py)
+This file contains the debug class FileMem which is a child of the abstract class GenDrv (gendrvr.py)
 
-
+@file
 @date Created on Mar 19, 2014
-@author: Benoit Rat (benoit<AT>sevensols.com)
-@licence: LGPL v2.1
-@ref: http://www.ohwr.org
-@ref: http://www.sevensols.com
+@author Benoit Rat (benoit<AT>sevensols.com)
+@copyright LGPL v2.1
+@see http://www.ohwr.org
+@see http://www.sevensols.com
+@ingroup bridges
 '''
 
-##-------------------------------------------------------------------------------------------------
-##                               GNU LESSER GENERAL PUBLIC LICENSE                                |
-##                              ------------------------------------                              |
-## This source file is free software; you can redistribute it and/or modify it under the terms of |
-## the GNU Lesser General Public License as published by the Free Software Foundation; either     |
-## version 2.1 of the License, or (at your option) any later version.                             |
-## This source is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;       |
-## without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.      |
-## See the GNU Lesser General Public License for more details.                                    |
-## You should have received a copy of the GNU Lesser General Public License along with this       |
-## source; if not, download it from http://www.gnu.org/licenses/lgpl-2.1.html                     |
-##-------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------|
+#                   GNU LESSER GENERAL PUBLIC LICENSE                          |
+#                 ------------------------------------                         |
+# This source file is free software; you can redistribute it and/or modify it  |
+# under the terms of the GNU Lesser General Public License as published by the |
+# Free Software Foundation; either version 2.1 of the License, or (at your     |
+# option) any later version. This source is distributed in the hope that it    |
+# will be useful, but WITHOUT ANY WARRANTY; without even the implied warrant   |
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser   |
+# General Public License for more details. You should have received a copy of  |
+# the GNU Lesser General Public License along with this  source; if not,       |
+# download it from http://www.gnu.org/licenses/lgpl-2.1.html                   |
+#------------------------------------------------------------------------------|
 
-##-------------------------------------------------------------------------------------------------
-##                                            Import                                             --
-##-------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#                                  Import                                     --
+#----------------------------------------- -------------------------------------
 # Import system modules
 from ctypes import *
 import os, errno, re, sys, struct
@@ -43,6 +44,7 @@ if not 'SEEK_SET' in dir(os):
 class FileMem(GenDrvr):
     '''
     This class is used for debugging or developing purpose only.
+    
     It can fake behaviour without the need of a real device.
     '''
     
@@ -87,9 +89,11 @@ class FileMem(GenDrvr):
     def devread(self, bar, offset, width):
         '''
         Method that do a read on the opened file
-        @param bar BAR used by PCIe bus (not need here)
-        @param offset address within bar
-        @param width data size (1, 2, or 4 bytes)
+        
+        Args:
+            bar : BAR used by PCIe bus (not need here)
+            offset : address within bar
+            width : data size (1, 2, or 4 bytes)
         '''
         address = offset
         ret=self.find(address)
@@ -100,10 +104,12 @@ class FileMem(GenDrvr):
     def devwrite(self, bar, offset, width,datum):
         '''
         Method that do a write of datatum on the opened file
-        @param bar BAR used by PCIe bus (not need here)
-        @param offset address within bar
-        @param width data size (1, 2, or 4 bytes)
-        @param datum data value that need to be written
+        
+        Args:
+            bar : BAR used by PCIe bus (not need here)
+            offset : address within bar
+            width : data size (1, 2, or 4 bytes)
+            datum : data value that need to be written
         '''
         address = offset
         wstr="@0x%08X: 0x%08x" % (address,datum)

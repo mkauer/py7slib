@@ -1,33 +1,34 @@
 #!   /usr/bin/env   python
 # -*- coding: utf-8 -*
 '''
-This file contains the eb1 class which is a child
-of the abstract class GenDrv (gendrvr.py)
+This file contains the eb1 class which is a child of the abstract class GenDrv (gendrvr.py)
 
-
+@file
 @date Created on Apr 24, 2014
-@author: Benoit Rat (benoit<AT>sevensols.com)
-@licence: LGPL v2.1
-@ref: http://www.ohwr.org
-@ref: http://www.sevensols.com
+@author Benoit Rat (benoit<AT>sevensols.com)
+@copyright LGPL v2.1
+@see http://www.ohwr.org
+@see http://www.sevensols.com
+@ingroup bridges
 '''
 
-##-------------------------------------------------------------------------------------------------
-##                               GNU LESSER GENERAL PUBLIC LICENSE                                |
-##                              ------------------------------------                              |
-## This source file is free software; you can redistribute it and/or modify it under the terms of |
-## the GNU Lesser General Public License as published by the Free Software Foundation; either     |
-## version 2.1 of the License, or (at your option) any later version.                             |
-## This source is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;       |
-## without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.      |
-## See the GNU Lesser General Public License for more details.                                    |
-## You should have received a copy of the GNU Lesser General Public License along with this       |
-## source; if not, download it from http://www.gnu.org/licenses/lgpl-2.1.html                     |
-##-------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------|
+#                   GNU LESSER GENERAL PUBLIC LICENSE                          |
+#                 ------------------------------------                         |
+# This source file is free software; you can redistribute it and/or modify it  |
+# under the terms of the GNU Lesser General Public License as published by the |
+# Free Software Foundation; either version 2.1 of the License, or (at your     |
+# option) any later version. This source is distributed in the hope that it    |
+# will be useful, but WITHOUT ANY WARRANTY; without even the implied warrant   |
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser   |
+# General Public License for more details. You should have received a copy of  |
+# the GNU Lesser General Public License along with this  source; if not,       |
+# download it from http://www.gnu.org/licenses/lgpl-2.1.html                   |
+#------------------------------------------------------------------------------|
 
-##-------------------------------------------------------------------------------------------------
-##                                            Import                                             --
-##-------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#                                   Import                                    --
+#-------------------------------------------------------------------------------
 # Import system modules
 import subprocess
 import os
@@ -35,9 +36,7 @@ import os
 from gendrvr import *
 
 class EB1(GenDrvr):
-    '''
-    The EB1 class has been created to interface WB access within
-    the WRS. 
+    '''The EB1 class has been created to interface WB access within the WRS. 
     
     We have create a simple library that open the device and can perform
     read/write on the WB bus.
@@ -46,10 +45,11 @@ class EB1(GenDrvr):
     '''
     
     def __init__(self,LUN, show_dbg=False):
-        '''
-        Constructor 
-        @param LUN the logical unit, with this driver it is not need as we should have only one 
-        WB bus on the FPGA connected to the ARM CPU
+        '''Constructor
+        
+        Args:
+            LUN : the logical unit, with this driver it is not need as we should have only one WB bus on the FPGA connected to the ARM CPU
+            show_dbg : enables debug info
         '''
         self.show_dbg=show_dbg
         self.load_lib("libeb1.so")
@@ -58,25 +58,24 @@ class EB1(GenDrvr):
         self.open(LUN)
         
     def open(self, LUN):
-        '''
-        Open the device and map to the FPGA bus
+        '''Open the device and map to the FPGA bus
         '''
         self.hdev=self.lib.EB1_open()
         if self.hdev==0:
             raise NameError("Could not open device")
         
     def close(self):
-        '''
-        Close the device and unmap
+        '''Close the device and unmap
         '''
         self.lib.EB1_close()
         
     def devread(self, bar, offset, width):
-        '''
-        Method that do a read on the devices using /dev/mem device
-        @param bar BAR used by PCIe bus
-        @param offset address within bar
-        @param width data size (1, 2, or 4 bytes)
+        '''Method that do a read on the devices using /dev/mem device
+        
+        Args:
+            bar : BAR used by PCIe bus
+            offset : address within bar
+            width : data size (1, 2, or 4 bytes)
         '''
         address = offset
         INTP = POINTER(c_uint)
@@ -90,12 +89,13 @@ class EB1(GenDrvr):
         
         
     def devwrite(self, bar, offset, width, datum):
-        '''
-        Method that do a write on the devices using /dev/mem device
-        @param bar BAR used by PCIe bus
-        @param offset address within bar
-        @param width data size (1, 2, or 4 bytes)
-        @param datum data value that need to be written
+        ''' Method that do a write on the devices using /dev/mem device
+        
+        Args:
+            bar : BAR used by PCIe bus
+            offset : address within bar
+            width : data size (1, 2, or 4 bytes)
+            datum : data value that need to be written
         '''
         address = offset
         INTP = POINTER(c_uint)
