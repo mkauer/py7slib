@@ -60,7 +60,7 @@ class wb_UART(GenDrvr) :
 
         Args:
             LUN (str) : Logical Unit Number
-            baudrate (int) : : Baud rate such as 9600 or 115200 (default)
+            baudrate (int) :  Baud rate such as 9600 or 115200 (default)
             timeout (int) : Set a read timeout value. By default is
             set to 1 second to do blocking writes
         '''
@@ -94,6 +94,7 @@ class wb_UART(GenDrvr) :
             width : data size (1, 2, or 4 bytes)
         '''
         cmd = "wb read 0x%X\r" % (offset)
+        # print(">\t %s" % (cmd))
 
         try :
             self._serial.flushInput()
@@ -121,20 +122,22 @@ class wb_UART(GenDrvr) :
                 raise PtsError("ERROR: Write of command %s failed : %s." % (cmd, clean))
 
             rd = self._serial.readline()
-            return rd[:-1]
+
+            return int(rd[:-1],0)
 
         except serial.SerialTimeoutException as e :
             print ("Error: Write timout (%d sec) exceeded : %s" % (self.WRTIMEOUT,e))
 
 
 
-    def devwrite(self, bar, offset, width, datum):
+    def devwrite(self, bar, offset, width, datum, check=False) :
         '''
         Method that interfaces with wb write
             bar : BAR used by PCIe bus
             offset : address within bar
             width : data size (1, 2, or 4 bytes)
             datum : data value that need to be written
+            check : Enables check of writed data
         '''
         cmd = "wb write 0x%X 0x%X\r" % (offset, datum)
 
@@ -160,7 +163,7 @@ class wb_UART(GenDrvr) :
             clean = cleaner.cleanStr(rd)
 
             # Remember: '\r' is inserted to cmd
-            if cmd[:-1] != clean :
+            if cmd[:-1] != clean and check:
                 raise PtsError("ERROR: Write of command %s failed : %s." % (cmd, clean))
 
 
@@ -168,7 +171,7 @@ class wb_UART(GenDrvr) :
             rd = self._serial.readline()
 
             # If erros read another line
-            if "Error" in rd :
+            if "Error" in rd and check:
                 expected = self._serial.readline()
                 found = self._serial.readline()
                 raise PtsError("ERROR: %s, %s" % (expected[:-4], found[:-4]))
