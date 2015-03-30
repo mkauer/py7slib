@@ -180,3 +180,62 @@ class wb_UART(GenDrvr) :
 
         except serial.SerialTimeoutException as e :
             print ("Error: Write timout (%d sec) exceeded : %s" % (self.WRTIMEOUT,e))
+
+
+    def cmd_w(self, cmd, inputRead=0, output=False) :
+        '''
+        Method for write commands to WR-LEN
+            cmd (str) : A valid command
+            inputRead (int) : Expected number of lines to be read
+            output (Boolean) : When enabled, readed lines from serial com. will be returned.
+
+        Returns:
+            Outputs a list of str from WR-LEN.
+        '''
+        cmd = "%s\r" % cmd
+
+        try :
+            self._serial.flushInput()
+            self._serial.flushOutput()
+            bwr = 0
+            # Is necessary to write char by char because is needed to make a
+            # timeout between each write
+            for c in cmd :
+                bwr += self._serial.write(c)
+                time.sleep(self.INTERCHARTIMEOUT) # Intern interCharTimeout isn't working, so put a manual timeout
+            self._serial.flush()
+
+            if bwr != len(cmd):
+                raise PtsError("ERROR: Write of string %s failed. Bytes writed : %d of %d." % (cmd, bwr,len(cmd)))
+
+            # Read first line, which is the command we previously send, check it!!
+            # cleaner = str_Cleaner() # Class to help cleaning control characters from str
+            #
+            # read 1 SFPs in DB
+            ret = []
+            cleaner = str_Cleaner()
+
+            for i in range(0, inputRead) :
+                clean = cleaner.cleanStr(self._serial.readline())
+                ret.append(clean)
+            #
+            # clean = cleaner.cleanStr(rd)
+            #
+            # # Remember: '\r' is inserted to cmd
+            # if cmd[:-1] != clean and check:
+            #     raise PtsError("ERROR: Write of command %s failed : %s." % (cmd, clean))
+            #
+            #
+            # # Read another line to check if there was any errors
+            # rd = self._serial.readline()
+            #
+            # # If erros read another line
+            # if "Error" in rd and check:
+            #     expected = self._serial.readline()
+            #     found = self._serial.readline()
+            #     raise PtsError("ERROR: %s, %s" % (expected[:-4], found[:-4]))
+
+            return ret
+
+        except serial.SerialTimeoutException as e :
+            print ("Error: Write timout (%d sec) exceeded : %s" % (self.WRTIMEOUT,e))
