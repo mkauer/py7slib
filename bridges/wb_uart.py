@@ -182,11 +182,10 @@ class wb_UART(GenDrvr) :
             print ("Error: Write timout (%d sec) exceeded : %s" % (self.WRTIMEOUT,e))
 
 
-    def cmd_w(self, cmd, inputRead=0, output=False) :
+    def cmd_w(self, cmd, output=True) :
         '''
         Method for write commands to WR-LEN
             cmd (str) : A valid command
-            inputRead (int) : Expected number of lines to be read
             output (Boolean) : When enabled, readed lines from serial com. will be returned.
 
         Returns:
@@ -203,37 +202,32 @@ class wb_UART(GenDrvr) :
             for c in cmd :
                 bwr += self._serial.write(c)
                 time.sleep(self.INTERCHARTIMEOUT) # Intern interCharTimeout isn't working, so put a manual timeout
-            self._serial.flush()
+            self._serial.flush() # Wait until all data is written
 
             if bwr != len(cmd):
                 raise PtsError("ERROR: Write of string %s failed. Bytes writed : %d of %d." % (cmd, bwr,len(cmd)))
 
             # Read first line, which is the command we previously send, check it!!
-            # cleaner = str_Cleaner() # Class to help cleaning control characters from str
-            #
-            # read 1 SFPs in DB
-            ret = []
-            cleaner = str_Cleaner()
+            cleaner = str_Cleaner() # Class to help cleaning control characters from str
+            clean = cleaner.cleanStr(self._serial.readline())
+            # Remember: '\r' is inserted to cmd
+            if cmd[:-1] != clean and check:
+                raise PtsError("ERROR: Write of command %s failed : %s." % (cmd, clean))
 
-            for i in range(0, inputRead) :
-                clean = cleaner.cleanStr(self._serial.readline())
-                ret.append(clean)
-            #
-            # clean = cleaner.cleanStr(rd)
-            #
-            # # Remember: '\r' is inserted to cmd
-            # if cmd[:-1] != clean and check:
-            #     raise PtsError("ERROR: Write of command %s failed : %s." % (cmd, clean))
-            #
-            #
-            # # Read another line to check if there was any errors
-            # rd = self._serial.readline()
-            #
-            # # If erros read another line
-            # if "Error" in rd and check:
-            #     expected = self._serial.readline()
-            #     found = self._serial.readline()
-            #     raise PtsError("ERROR: %s, %s" % (expected[:-4], found[:-4]))
+            # Attempt to read more from input buffer
+            # read 1 SFPs in DB
+            ret = ""
+
+            if output :
+                # while self._serial.inWaiting() > 0 :
+                # Read(1000) : Reading byte by byte is not a good idea because
+                # inWaiting() gives a lower value than real is. Attempt to read
+                # a high number of bytes (more than really would be) so you ensure
+                # that always you are reading all data returned by WR-LEN.
+                # Reading must be seted to blocking with timeout.
+                ret += self._serial.read(1000)
+                ret = ret[:-6] # Remove prompt from returned string
+
 
             return ret
 
