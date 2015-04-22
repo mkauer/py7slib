@@ -206,12 +206,12 @@ class wb_UART(GenDrvr) :
 
             if bwr != len(cmd):
                 raise PtsError("ERROR: Write of string %s failed. Bytes writed : %d of %d." % (cmd, bwr,len(cmd)))
-
+            time.sleep(0.2)
             # Read first line, which is the command we previously send, check it!!
             cleaner = str_Cleaner() # Class to help cleaning control characters from str
             clean = cleaner.cleanStr(self._serial.readline())
             # Remember: '\r' is inserted to cmd
-            if cmd[:-1] != clean and check:
+            if cmd[:-1] != clean :
                 raise PtsError("ERROR: Write of command %s failed : %s." % (cmd, clean))
 
             # Attempt to read more from input buffer
