@@ -42,9 +42,18 @@ class wb_UART(GenDrvr) :
     Example of use:
     '''
 
-    def __init__(self, baudrate=115200, wrtimeout=None, interchartimeout=None, rdtimeout=None) :
+    def __init__(self, plog, baudrate=115200, wrtimeout=None, interchartimeout=None, \
+    rdtimeout=None, ntries=0) :
         '''
         Class constructor
+
+        Args:
+            baudrate (int) : Baudrate used in the WR-LEN serial port
+            wrtimeout (int) : Timeout before read after writing
+            interchartimeout (int) : Timeout between characters
+            rdtimeout (int) : Read timeout
+            ntries (int) : How many times retry a read or a write
+            plog (PTSLogger) : The logger
 
         '''
         self.PORT = "/dev/ttyUSB"
@@ -53,6 +62,8 @@ class wb_UART(GenDrvr) :
         self.INTERCHARTIMEOUT = interchartimeout
         self.RDTIMEOUT = rdtimeout
         self._serial = None
+        self.ntries = ntries
+        self.logger = plog
 
     def open(self, LUN=0) :
         '''
@@ -70,19 +81,18 @@ class wb_UART(GenDrvr) :
             self._serial = serial.Serial(port=self.PORT, baudrate=self.BAUDRATE,\
             timeout=self.RDTIMEOUT, writeTimeout=self.WRTIMEOUT, interCharTimeout=self.INTERCHARTIMEOUT)
             self._serial.flushOutput()
-            print ("Port %s succesfully opened " % (self.PORT))
+            self.logger.dbg ("Port %s succesfully opened " % (self.PORT))
         except ValueError as e:
-            print ("ERROR opening serial port %s: %s" % (self.PORT,e))
-            print e
+            self.logger.err ("ERROR opening serial port %s: %s" % (self.PORT,e))
         except serial.SerialException as e:
-            print ("ERROR: can't open %s port: %s" % (self.PORT,e))
+            self.logger.err ("ERROR: can't open %s port: %s" % (self.PORT,e))
 
     def close(self) :
         '''
         Close serial communication
         '''
         self._serial.close()
-        print ("Port %s succesfully closed " % self.PORT)
+        self.logger.dbg ("Port %s succesfully closed " % self.PORT)
 
     def devread(self, bar, offset, width) :
         '''
@@ -94,45 +104,65 @@ class wb_UART(GenDrvr) :
             width : data size (1, 2, or 4 bytes)
         '''
         cmd = "wb read 0x%X\r" % (offset)
-        # print(">\t %s" % (cmd))
+        self.logger.dbg("\t %s" % (cmd))
+        ntries = self.ntries
+        read_ok = True
 
         try :
-            self._serial.flushInput()
-            self._serial.flushOutput()
-            bwr = 0
-            # Is necessary to write char by char because is needed to make a
-            # timeout between each write
-            for c in cmd :
-                bwr += self._serial.write(c)
-                time.sleep(self.INTERCHARTIMEOUT) # Intern interCharTimeout isn't working, so put a manual timeout
-            self._serial.flush()
+            while (True) :
+                self._serial.flushInput()
+                self._serial.flushOutput()
+                bwr = 0
+                # Is necessary to write char by char because is needed to make a
+                # timeout between each write
+                for c in cmd :
+                    bwr += self._serial.write(c)
+                    time.sleep(self.INTERCHARTIMEOUT) # Intern interCharTimeout isn't working, so put a manual timeout
+                self._serial.flush()
 
-            if bwr != len(cmd):
-                raise PtsError("ERROR: Write of command string %s failed. \
-                Bytes writed : %d of %d." % (cmd, bwr,len(cmd)))
+                if bwr != len(cmd):
+                    if ntries <= 0 :
+                        raise PtsError("ERROR: Write of command string '%s' failed. \
+                        Bytes writed : %d of %d." % (cmd, bwr,len(cmd)))
+                    else : read_ok = False
 
-            # First line readed is the previous command
-            rd = self._serial.readline()
+                time.sleep(self.WRTIMEOUT)
 
-            cleaner = str_Cleaner() # Class to help cleaning control characters from str
-            clean = cleaner.cleanStr(rd)
+                # First line readed is the previous command
+                rd = self._serial.readline()
 
-            # Remember: '\r' is inserted to cmd
-            if cmd[:-1] != clean :
-                raise PtsError("ERROR: Write of command %s failed : %s." % (cmd, clean))
+                cleaner = str_Cleaner() # Class to help cleaning control characters from str
+                clean = cleaner.cleanStr(rd)
 
-            rd = self._serial.readline()
+                # Remember: '\r' is inserted to cmd
+                if cmd[:-1] != clean :
+                    if ntries <= 0:
+                        raise PtsError("ERROR: Write of command %s failed : '%s'" \
+                        % (cmd, clean))
+                    else : read_ok = False
+
+                rd = self._serial.readline()
+
+                if ntries <= 0 or read_ok: break;
+                ntries -= 1
+                read_ok = True
 
             return int(rd[:-1],0)
 
         except serial.SerialTimeoutException as e :
-            print ("Error: Write timout (%d sec) exceeded : %s" % (self.WRTIMEOUT,e))
+            self.logger.err("Error: Write timeout (%d sec) exceeded : '%s'" % (self.WRTIMEOUT,e))
 
 
 
     def devwrite(self, bar, offset, width, datum, check=False) :
         '''
         Method that interfaces with wb write
+
+        When you write into a register, some times you read some value distinct
+        than the value just writed. 'wb read' interprets this behaviour as an
+        error when actually it's not.
+
+        Args:
             bar : BAR used by PCIe bus
             offset : address within bar
             width : data size (1, 2, or 4 bytes)
@@ -140,46 +170,51 @@ class wb_UART(GenDrvr) :
             check : Enables check of writed data
         '''
         cmd = "wb write 0x%X 0x%X\r" % (offset, datum)
+        self.logger.dbg("\t %s" % (cmd))
+        ntries = self.ntries
+        read_ok = True
 
         try :
-            self._serial.flushInput()
-            self._serial.flushOutput()
-            bwr = 0
-            # Is necessary to write char by char because is needed to make a
-            # timeout between each write
-            for c in cmd :
-                bwr += self._serial.write(c)
-                time.sleep(self.INTERCHARTIMEOUT) # Intern interCharTimeout isn't working, so put a manual timeout
-            self._serial.flush()
+            while (True) :
+                self._serial.flushInput()
+                self._serial.flushOutput()
+                bwr = 0
+                # Is necessary to write char by char because is needed to make a
+                # timeout between each write
+                for c in cmd :
+                    bwr += self._serial.write(c)
+                    time.sleep(self.INTERCHARTIMEOUT) # Intern interCharTimeout isn't working, so put a manual timeout
+                self._serial.flush()
+                time.sleep(self.WRTIMEOUT)
 
-            if bwr != len(cmd):
-                raise PtsError("ERROR: Write of string %s failed. Bytes writed : %d of %d." % (cmd, bwr,len(cmd)))
+                if bwr != len(cmd):
+                    if ntries <= 0:
+                        raise PtsError("ERROR: Write of string %s failed. Bytes writed : %d of %d.\n"\
+                        % (cmd, bwr,len(cmd)))
+                    else : read_ok = False
 
-            # Read first line, which is the command we previously send, check it!!
-            cleaner = str_Cleaner() # Class to help cleaning control characters from str
+                # Read first line, which is the command we previously send, check it!!
+                cleaner = str_Cleaner() # Class to help cleaning control characters from str
 
-            rd = self._serial.readline()
+                rd = self._serial.readline()
 
-            clean = cleaner.cleanStr(rd)
+                clean = cleaner.cleanStr(rd)
 
-            # Remember: '\r' is inserted to cmd
-            if cmd[:-1] != clean and check:
-                raise PtsError("ERROR: Write of command %s failed : %s." % (cmd, clean))
+                # Remember: '\r' is inserted to cmd
+                if cmd[:-1] != clean:
+                    if ntries <= 0:
+                        raise PtsError("ERROR: Write of command %s failed : %s.\n"\
+                        % (cmd, clean))
+                    else : read_ok = False
 
-
-            # Read another line to check if there was any errors
-            rd = self._serial.readline()
-
-            # If erros read another line
-            if "Error" in rd and check:
-                expected = self._serial.readline()
-                found = self._serial.readline()
-                raise PtsError("ERROR: %s, %s" % (expected[:-4], found[:-4]))
+                if ntries <= 0 or read_ok: break
+                ntries -= 1
+                read_ok = True
 
             return bwr
 
         except serial.SerialTimeoutException as e :
-            print ("Error: Write timout (%d sec) exceeded : %s" % (self.WRTIMEOUT,e))
+            self.logger.err ("Error: Write timout (%d sec) exceeded : %s\n" % (self.WRTIMEOUT,e))
 
 
     def cmd_w(self, cmd, output=True) :
@@ -195,6 +230,7 @@ class wb_UART(GenDrvr) :
             PtsError
         '''
         cmd = "%s\r" % cmd
+        self.logger.dbg("\t %s" % (cmd))
 
         try :
             self._serial.flushInput()
@@ -210,22 +246,8 @@ class wb_UART(GenDrvr) :
             if bwr != len(cmd):
                 raise PtsError("ERROR: Write of string %s failed. Bytes writed : %d of %d." % (cmd, bwr,len(cmd)))
 
-            time.sleep(0.1)
-            # Read first line, which is the command we previously send, check it!!
-
-            # This part is commented because a bug with class str_Cleaner using python3
-            # TODO: Fix this
-            # cleaner = str_Cleaner() # Class to help cleaning control characters from str
+            time.sleep(self.WRTIMEOUT)
             rd = self._serial.readline()#.decode('UTF-8')
-            # clean = cleaner.cleanStr(rd)
-
-            # Remember: '\r' is inserted to cmd
-            # if cmd[:-1] != clean:
-            #     print("ERROR comp : (%s) (%s)" % (cmd[:-1],clean))
-            #     raise PtsError("ERROR: Write of command %s failed : %s." % (cmd, clean))
-
-            # Attempt to read more from input buffer
-            # read 1 SFPs in DB
             ret = ""
 
             if output :
@@ -237,7 +259,6 @@ class wb_UART(GenDrvr) :
                 # Reading must be seted to blocking with timeout.
                 ret += self._serial.read(1000)
                 ret = ret[:-6] # Remove prompt from returned string
-
 
             return ret
 
