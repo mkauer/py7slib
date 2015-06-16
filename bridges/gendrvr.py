@@ -64,7 +64,7 @@ class GenDrvr(object):
         ## First set library path
         libpath = os.getenv('LD_LIBRARY_PATH')
         here = os.getcwd()
-        libpath = here if not libpath else here + ':' + libpath
+        libpath = here+":/usr/lib:/usr/local/lib" if not libpath else here + ':' + libpath
         os.environ['LD_LIBRARY_PATH'] = libpath
         
         ##Then load the library
@@ -112,7 +112,7 @@ class GenDrvr(object):
 
 ###################### Not implemented method that could be redefine
         
-    def devblockread(self, bar, offset, bsize):
+    def devblockread(self, bar, offset, bsize, incr=0x4):
         '''
         Abstract method that do a read on the devices
             bar : BAR used by PCIe bus
@@ -122,7 +122,7 @@ class GenDrvr(object):
         raise NameError('Undef function') 
         return 0;
     
-    def devblockwrite(self, bar, offset, ldata):
+    def devblockwrite(self, bar, offset, ldata, incr=0x4):
         '''
         Abstract method that do a read on the devices
             bar : BAR used by PCIe bus
@@ -180,4 +180,9 @@ class GenDrvr(object):
     def write8(self, offset, datum):
         ''' Perform a simple 8b write '''
         self.devwrite(self.bar, offset, 1, datum)
+
+    @staticmethod
+    def getPtrData(data):
+       INTP = POINTER(c_uint)
+       return cast(addressof(data), INTP)
     
