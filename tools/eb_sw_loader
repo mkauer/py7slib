@@ -1,13 +1,7 @@
 #!   /usr/bin/env   python
 # -*- coding: utf-8 -*
 '''
-Tool to update the gateware in the SPIflash using etherbone/serial communication
-
-For example if you want to flash a new GW for the LEN with IP 192.168.7.50 you will
-need to write something like:
-
-    ./spiflash_update --bus=EB --lun=udp/192.168.7.54 --mode=update --file=wr-len-v2.x.mcs
-
+Tool to update the Software in the LM32 soft-processor etherbone/serial communication
 
 @file
 @date Created on Jun 16, 2015
@@ -43,39 +37,51 @@ def main():
 
     parser.add_option("-l", "--lun", help="Logical unit Number (SerialPort / IP)", dest="lun")
     parser.add_option("-b", "--bus", help="Bus UART/EB", dest="bus_type", default="EB")
-    parser.add_option("-d", "--debug", help="Debug Flag", dest="debug", default=False, action="store_true")
-    parser.add_option("-s", "--silent", help="Silent Flag", dest="silent", default=False, action="store_true")
-    parser.add_option("-m", "--mode", help="cido: Check ID Only," "vo: Verify Only," "update: update flash image", dest="mode", default="cido")
-    parser.add_option("-f", "--file", help="MCS file", dest="file")
+    parser.add_option("-d", "--debug", help="Debug Option", dest="debug", default=False, action="store_true")
+    parser.add_option("-m", "--mode", help="Operation mode: cido: Check ID Only, vo: Verify Only, update: update flash image ", dest="mode", default="cido")
+    parser.add_option("-f", "--file", help="RAM file", dest="file")
 
     options, args = parser.parse_args()
 
     ## Opening Bus connection
     try:
         if options.bus_type.lower() == "eb":
-            bus = EthBone(options.lun,(options.mode=="test"))
-            bus.silent=options.silent
+            bus = EthBone(options.lun,options.debug)
         #else: ##options.bus_type == "UART"
            # bus = wb_UART()
             #bus.open(options.lun)
     except BusException, e:
         print "Fatal:BUS Exception: %s" % (e)
 
-    #TODO: Check SDB to get the base address of the cores
+
+    ##Check SDB (TO BE DONE!)
+
+    ##Check Endpoint Register
+    bus.test_rw()
+
+    ##Check block read/write using MiniNIC RAM.
+    #bus.test_rwblock(0x40008)
 
 
-    if options.mode=="test":
-        ##Check Endpoint Register
-        bus.test_rw()
+    #bus.flash_update(options.mode,options.mcsfile,options.debug,0x40000)
 
-        ##Check block read/write using MiniNIC RAM.
-        bus.test_rwblock(0x20000)
-        return 0
+    #bus.fwLoad(options.mcsfile,0x0)
 
-    # This address must be changed if the layout changes.
+
+    ##Open File
+
+
+    ## Loop on 256 packets
+
     flash=SpiFlash(bus,0x40000,options.debug)
+    flash.eb_sw_loader(options.file)
 
-    flash.flash_update(options.mode,options.file)
+
+
+def EB_upload(f):
+
+    print "Just a test"
+
 
 
 
