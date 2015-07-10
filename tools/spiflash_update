@@ -59,10 +59,10 @@ def main():
            # bus = wb_UART()
             #bus.open(options.lun)
     except BusException, e:
-        print "Fatal:BUS Exception: %s" % (e)
+        print "Fatal: %s" % (e)
+        return 1
 
     #TODO: Check SDB to get the base address of the cores
-
 
     if options.mode=="test":
         ##Check Endpoint Register
