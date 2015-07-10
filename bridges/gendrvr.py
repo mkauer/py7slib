@@ -38,7 +38,10 @@ from ctypes import *
 class BusException(Exception):
     pass
 
-class BusWarning(Exception):
+class BusCritical(BusException):
+    pass
+
+class BusWarning(BusException):
     pass
 
 
