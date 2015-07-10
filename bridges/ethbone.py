@@ -178,6 +178,11 @@ class EthBone(GenDrvr):
         if status: raise BusCritical("Close socket: %s\n" % (self.eb_status(status)));
         self.socket=c_uint(0)
 
+    def enable_silent_close(self,enable=True):
+        '''Enable silent close (When writing a block don't ask to readback the values)
+        '''
+        self.silent=enable
+
 
     def devread(self, bar, offset, width):
         '''Method that do a cycle read on the devices using ed_device_read()
