@@ -387,16 +387,62 @@ class EthBone(GenDrvr):
         if oldmac!=rbmac: raise("Error writing old MAC")
         else: print "OK"
 
+    def test_rwblock(self,RAM_offset=0x0, nwords=128):
+        '''
+        Method to test multiple read/write WB cycles using RAM_offset
+
+        Args:
+            RAM_offset=The offset of the RAM so we can read write
+
+        Raises:
+            Exception: when there is an error during test.
+        '''
+
+        print "test R/W block"
+        dataw=[]
+        for i in range (0,nwords):
+            dataw.append(i<<24 | i << 16 | i << 8 | i)
+
+        self.devblockwrite(0, RAM_offset, dataw,4)
+        d_start=self.read(RAM_offset)
+        d_mid=self.read(RAM_offset+4*(nwords/2))
+        d_end=self.read(RAM_offset+4*(nwords-1))
+        msg=""
+        pos=0
+        if d_start!=dataw[pos]:
+            msg=msg+"@0x%08x: writen=0x%08x,  readback=0x%08x" %(RAM_offset+4*pos,dataw[pos],d_start)
+        pos=nwords/2
+        if d_start!=dataw[pos]:
+            msg=msg+"@0x%08x: writen=0x%08x,  readback=0x%08x" %(RAM_offset+4*pos,dataw[pos],d_start)
+        pos=nwords-1
+        if d_start!=dataw[pos]:
+            msg=msg+"@0x%08x: writen=0x%08x,  readback=0x%08x" %(RAM_offset+4*pos,dataw[pos],d_start)
+        if msg!="": raise(msg)
+
+        datar=self.devblockread(0, RAM_offset, len(dataw)*4,4)
+
+        return 0
+        print datar
+        if datar != dataw:
+            for i in range(0,len(dataw)):
+                print "%3d x%08x " % (i,dataw[i])
+            raise("Error reading data block")
 
 
+    def dataToByteArray(self,data_list,bytearray_list=[]):
+        '''
+        Convert list of hexadecimal characters to byte array
 
+        Args:
+            data_list=List of string in the format
+            bytearray_list=Optional byte array that can be append
 
-    def dataToByteArray(self,data_list,bytearray_list):
-        """Method for turning the Data lines strings into byte arrays
-        """
+        Returns:
+            A list of bytearray for each lines
+        '''
 
-        for i in range(0, len(data_list)):
-            hex_line=data_list[i].decode("hex")
+        for line in data_list:
+            hex_line=line.decode("hex")
             hex_array=bytearray(hex_line)
             bytearray_list.append(hex_array)
 
@@ -405,9 +451,17 @@ class EthBone(GenDrvr):
 
 
 
-    def wordsToPackets(self,data_words,data_packets,packetLen=128):
-        """Method for packing a list of words into a list of packets, each packet of length packetLen
-        """
+    def wordsToPackets(self,data_words,data_packets=[],packetLen=128):
+        '''Pack a list of words into a list of packets
+
+        Args:
+            data_words: A list of 32bits data
+            data_packets: The list where we will store each packets
+            packetLen: The number of words in the packets (Must be inferior to < MAXBYTE_PKTDATA/4)
+
+        Returns:
+            The list of data packets composed of {packetLen x 32bit words}
+        '''
         # the 4 bytes words are grouped in "packetLen" words packets
         for i in range(0,len(data_words),packetLen):
             if i<(len(data_words)-len(data_words)%packetLen):
@@ -422,25 +476,3 @@ class EthBone(GenDrvr):
                     last_packet.append(data_words[i+l])
                 data_packets.append(last_packet)
         return data_packets
-
-
-
-    def test_rwblock(self,RAM_offset=0x0):
-
-        print "test R/W block"
-        dataw=[]
-        for i in range (0,32):
-            dataw.append(i<<24 | i << 16 | i << 8 | i)
-
-        self.devblockwrite(0, RAM_offset, dataw,4)
-        self.read(RAM_offset)
-        self.read(RAM_offset+16*4)
-        self.read(RAM_offset+32*4)
-
-        datar=self.devblockread(0, RAM_offset, len(dataw)*4,4)
-
-        return 0
-        print datar
-        if datar != dataw:
-            for i in range(0,len(dataw)):
-                print "%3d x%08x " % (i,dataw[i])
