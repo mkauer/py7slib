@@ -170,6 +170,8 @@ class EthBone(GenDrvr):
     def close(self):
         '''Close the device and unmap
         '''
+        if (self.device.value & 0xFFFF)==0xFFFF: return 0
+
         status=self.lib.eb_device_close(self.device)
         if status: raise BusCritical("Close device: %s\n" % (self.eb_status(status)));
         self.device=c_uint(0)
