@@ -20,12 +20,15 @@ Activate LUA script.
 ----------------------
 
 Go to the wireshark directory and edit the file: `init.lua`
-You need to replace the begin of the file with:
+You need to replace the two following lines at the beginning of the file:
 
-run_user_scripts_when_superuser = true
+    run_user_scripts_when_superuser = false
+    if running_superuser then
 
--- disable potentialy harmful lua functions when running superuser
-if running_superuser_back then
+By:
+
+    run_user_scripts_when_superuser = true
+    if running_superuser_back then
 
 
 And add to the end of the file the line
@@ -36,9 +39,6 @@ Install lua libraries
 ----------------------
 
     sudo apt-get install lua5.1 lua-bitop
-
-Call back:
-http://stackoverflow.com/questions/7259794/how-can-i-get-methods-to-work-as-callbacks-with-python-ctypes
 
 
 @file
@@ -74,9 +74,6 @@ import sys
 from ctypes import *
 import time
 import struct
-
-
-
 
 
 # Import common modules
@@ -132,7 +129,7 @@ class EthBone(GenDrvr):
             show_dbg : enables debug info
         '''
 
-        print os.getenv('LD_LIBRARY_PATH')
+        if verbose: print "LD_LIBRARY_PATH=%s" % (os.getenv('LD_LIBRARY_PATH'))
         self.load_lib("libetherbone.so")
 
         ##Create empty ptr on structure used by ethbone
@@ -144,7 +141,7 @@ class EthBone(GenDrvr):
         ##Setup arguments
         self.LUN=LUN
         self.verbose=verbose
-        if self.verbose: print self.info()+"\n"
+        if self.verbose: print self.info()+"--\n"
 
         ##Setup variables
         self.addr_width=self.EB_ADDRX
@@ -163,24 +160,22 @@ class EthBone(GenDrvr):
     def open(self, LUN):
         '''Open the device and map to the FPGA bus
         '''
-
         status=self.lib.eb_socket_open(EB_ABI_CODE, 0, self.addr_width|self.data_width, self.getPtrData(self.socket))
-        if status: raise NameError('failed to open Etherbone socket: %s\n' % (self.eb_status(status)));
+        if status: raise BusCritical('failed to open Etherbone socket: %s\n' % (self.eb_status(status)));
 
         if self.verbose: print "Connecting to '%s' with %d retry attempts...\n" % (LUN, self.attempts);
         status=self.lib.eb_device_open(self.socket, LUN, self.EB_ADDRX|self.EB_DATAX, self.attempts, self.getPtrData(self.device))
-        if status: raise NameError("failed to open Etherbone device: %s\n" % (self.eb_status(status)));
-
+        if status: raise BusCritical("failed to open Etherbone device: %s\n" % (self.eb_status(status)));
 
     def close(self):
         '''Close the device and unmap
         '''
         status=self.lib.eb_device_close(self.device)
-        if status: raise NameError("Close device: %s\n" % (self.eb_status(status)));
+        if status: raise BusCritical("Close device: %s\n" % (self.eb_status(status)));
         self.device=c_uint(0)
 
         status=self.lib.eb_socket_close(self.socket)
-        if status: raise NameError("Close socket: %s\n" % (self.eb_status(status)));
+        if status: raise BusCritical("Close socket: %s\n" % (self.eb_status(status)));
         self.socket=c_uint(0)
 
 
@@ -208,7 +203,7 @@ class EthBone(GenDrvr):
 
         status=self.lib.eb_device_read(self.device,c_uint(address),self.format,pData,user_data,cb)
         if self.verbose: print "R@x%08X > 0x%08x" %(address, pData[0])
-        if status: raise NameError('Bad Etherbone Read: %s' % (self.eb_status(status)))
+        if status: raise BusWarning('Bad Etherbone Read: %s' % (self.eb_status(status)))
         return pData[0]
 
 
@@ -232,19 +227,30 @@ class EthBone(GenDrvr):
 
         if self.verbose: print "W@x%08X < 0x%08x" %( address, datum)
         status=self.lib.eb_device_write(self.device,c_uint(address),self.format,data,user_data,cb)
-        if status: raise NameError('Bad Wishbone Write @0x%08x > 0x%08x : %s' % (address, datum, self.eb_status(status)))
+        if status: raise BusWarning('Bad Wishbone Write @0x%08x > 0x%08x : %s' % (address, datum, self.eb_status(status)))
         return data
 
 
     def devblockread(self, bar, offset, bsize, incr=0x4):
-        '''
-        Abstract method that do a read on the devices
-            bar : BAR used by PCIe bus (Not used)
-            offset : address within bar
-            bsize : size in bytes
+        '''Method that do a multiple cycle-read to read a data block
 
-            @return The array with the data
+        WARNING: THE CALLBACK CALL OF THIS FUNCTION IS NOT WORKING AT THE MOMENT.
+
+        Call back:
+        http://stackoverflow.com/questions/7259794/how-can-i-get-methods-to-work-as-callbacks-with-python-ctypes
+
+        Args:
+            bar : BAR used by PCIe bus (Not used)
+            offset : address at the device
+            bsize: The size in bytes of data to read (Should be multiply by 4)
+            incr: By default we increment the direction by 4 because we are reading 32bit words,
+            but if we want to write into a FIFO we should use incr=0x0
+
+        Returns:
+            A list of 32bits words
         '''
+        raise NameError('Not correctly implemented at the moment')
+
         cycle       = c_uint(0)
         user_data   = c_uint32(0xDEADBEEF)
         CBFUNC = CFUNCTYPE(None, c_void_p, c_void_p, c_void_p,c_int)
@@ -261,7 +267,7 @@ class EthBone(GenDrvr):
         actsize=bsize
         addr=offset
         status= self.lib.eb_cycle_open(self.device,pUData,cb,self.getPtrData(cycle))
-        if status: raise NameError('Cycle open : 0x%x, %s' % (offset,self.eb_status(status)))
+        if status: raise BusWarning('Cycle open : 0x%x, %s' % (offset,self.eb_status(status)))
         while actsize>0:
             self.lib.eb_cycle_read(cycle,addr,self.format,pData)
             if self.verbose: print "@x%x < %x %s" % (addr, pData[0], pUData[0])
@@ -270,17 +276,20 @@ class EthBone(GenDrvr):
             addr=addr+incr
             actsize=actsize-4
         status=self.lib.eb_cycle_close(cycle)
-        if status: raise NameError('Cycle close: %s' % (self.eb_status(status)))
+        if status: raise BusWarning('Cycle close: %s' % (self.eb_status(status)))
 
 
         return 0;
 
     def devblockwrite(self, bar, offset, ldata, incr=0x4):
-        '''
-        Abstract method that do a read on the devices
+        '''Method that do a multiple cycle-writes to write a data block
+
+        Args:
             bar : BAR used by PCIe bus (Not used)
-            offset : address within bar
-            ldata : data structure in words
+            offset : address in the device
+            ldata : A list of 32bits words
+            incr: By default we increment the direction by 4 because we are writing 32bit words,
+            but if we want to write into a FIFO we should use incr=0x0
         '''
 
         cycle       = c_uint(0)
@@ -290,7 +299,7 @@ class EthBone(GenDrvr):
 
         addr=offset
         status= self.lib.eb_cycle_open(self.device,user_data,cb,self.getPtrData(cycle))
-        if status: raise NameError('Cycle open : 0x%x, %s' % (offset,self.eb_status(status)))
+        if status: raise BusWarning('Cycle open : 0x%x, %s' % (offset,self.eb_status(status)))
         for data in ldata:
             ##Chequear endianess de format
             if self.verbose: print "@x%x > %x" % (addr, data)
@@ -301,7 +310,7 @@ class EthBone(GenDrvr):
             status=self.lib.eb_cycle_close_silently(cycle) #Close without asking acknowledgment of the device (faster)
         else:
             status=self.lib.eb_cycle_close(cycle)
-        if status: raise NameError('Cycle close: %s' % (self.eb_status(status)))
+        if status: raise BusWarning('Cycle close: %s' % (self.eb_status(status)))
 
 
         return 0;
@@ -342,6 +351,8 @@ class EthBone(GenDrvr):
 
         Args:
             EP_offset=The offset of the endpoint
+        Raises:
+            Exception: when the there is an error.
         '''
         REG_MACL=0x28
         REG_ID=0x34
