@@ -17,7 +17,7 @@ import traceback
 import os
 import re
 import subprocess
-from optparse import OptionParser
+import argparse as arg
 
 
 sys.path.append('../../')
@@ -31,43 +31,34 @@ from pts_core.periph.ipc_spiflash import *
 
 
 def main():
+    '''
+    Script for loading the LM32's Software in the WR-LEN
+    '''
+    
+    parser = arg.ArgumentParser(description='WR-LEN Software Loader v1.0')
 
-    use = "Usage: %prog [--bus=EB --lun=0 --debug]  <firmware.ram>"
-    parser = OptionParser(usage=use, version="spiflash update v1.0")
+    parser.add_argument('--bus','-b',help='communication bus', choices=['EB','UART'],\
+    required=True)
+    parser.add_argument('--lun','-l',help='Logical unit Number (SerialPort / IP)',\
+    type=str, required=True)
+    parser.add_argument('--address', '-a', help="SDB Bus address (Hex format)",required=True)
+    parser.add_argument('--file','-f',help="RAM file",required=True)
+    parser.add_argument('--debug','-d',help="Enable debug output",action='store_true')
 
-    parser.add_option("-l", "--lun", help="Logical unit Number (SerialPort / IP)", dest="lun")
-    parser.add_option("-b", "--bus", help="Bus UART/EB", dest="bus_type", default="EB")
-    parser.add_option("-d", "--debug", help="Debug Flag", dest="debug", default=False, action="store_true")
-
-    options, args = parser.parse_args()
-    if len(args)<1:
-        print "ERROR: You must provide the <firmware.ram>"
-        parser.print_help()
-        return 1
-
-
+    args = parser.parse_args()
     ## Opening Bus connection
     try:
-        if options.bus_type.lower() == "eb":
-            bus = EthBone(options.lun,options.debug)
+        if args.bus.lower() == "eb":
+            bus = EthBone(args.lun,args.debug)
         #else: ##options.bus_type == "UART"
            # bus = wb_UART()
             #bus.open(options.lun)
     except BusException, e:
         print "Fatal: %s" % (e)
-
     ##TODO: add sdb to detect where we should load on any bus.
 
-    flash=SpiFlash(bus,0x40000,options.debug)
-    flash.eb_sw_loader(args[0])
-
-
-
-def EB_upload(f):
-
-    print "Just a test"
-
-
+    flash=SpiFlash(bus,int(args.address,16),args.debug)
+    flash.eb_sw_loader(args.file)
 
 
 if __name__ == '__main__':
