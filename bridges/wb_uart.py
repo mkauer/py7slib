@@ -83,9 +83,11 @@ class wb_UART(GenDrvr) :
             self._serial.flushOutput()
             self.logger.dbg ("Port %s succesfully opened " % (self.PORT))
         except ValueError as e:
-            self.logger.err ("ERROR opening serial port %s: %s" % (self.PORT,e))
+            msg = "ERROR opening serial port %s" % (self.PORT)
+            raise PtsError(msg)
         except serial.SerialException as e:
-            self.logger.err ("ERROR: can't open %s port: %s" % (self.PORT,e))
+            msg = "ERROR: can't open %s" % (self.PORT)
+            raise PtsError(msg)
 
     def close(self) :
         '''
