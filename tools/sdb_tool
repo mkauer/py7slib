@@ -23,7 +23,7 @@ import argparse as arg
 sys.path.append('../../')
 
 from pts_core.bridges.ethbone import *
-#from pts_core.bridges.wb_uart import *
+from pts_core.bridges.wb_uart import *
 from pts_core.bridges.sdb import *
 from pts_core.main.ptsexcept import *
 from pts_core.main.ptslogger import PTSLogger
@@ -47,14 +47,18 @@ def main():
 
 
     args = parser.parse_args()
-
+    
     ## Opening Bus connection
     try:
         if args.bus.lower() == "eb":
             bus = EthBone(args.lun,args.debug)
-        #else: ##options.bus_type == "UART"
-           # bus = wb_UART()
-            #bus.open(options.lun)
+        elif args.bus.lower() == "uart":
+            plog=PTSLogger("/tmp/info.log","/tmp/error.log",args.debug)
+            bus = wb_UART(plog)
+            bus.open(args.lun)
+        else:
+            print "Unknown bus"
+            return
     except BusException, e:
         print "Fatal: %s" % (e)
 

@@ -42,8 +42,7 @@ class wb_UART(GenDrvr) :
     Example of use:
     '''
 
-    def __init__(self, plog, baudrate=115200, wrtimeout=None, interchartimeout=None, \
-    rdtimeout=None, ntries=0) :
+    def __init__(self, plog, baudrate=115200, rdtimeout=0.1, wrtimeout=0.1, interchartimeout=0.0005, ntries=2):
         '''
         Class constructor
 
