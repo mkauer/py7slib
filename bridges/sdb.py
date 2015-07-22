@@ -55,7 +55,7 @@ class sdb_product(Structure):
     """
     _fields_ = [
         ("vendor_id",  c_uint64),
-        ("device_id", c_uint64),
+        ("device_id", c_uint32),
         ("version",  c_uint32),
         ("date", c_uint32),
         ("name", (c_char * 19)),
