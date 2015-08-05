@@ -200,9 +200,9 @@ class EthBone(GenDrvr):
         '''
         address = offset
 
-        INTP = POINTER(c_uint32)
+        UINT32P = POINTER(c_uint32)
         data = c_uint32(0xBADC0FFE)
-        pData = cast(addressof(data), INTP)
+        pData = cast(addressof(data), UINT32P)
 
         user_data=c_uint32(0)
         cb=c_uint(0)
@@ -251,42 +251,47 @@ class EthBone(GenDrvr):
             offset : address at the device
             bsize: The size in bytes of data to read (Should be multiply by 4)
             incr: By default we increment the direction by 4 because we are reading 32bit words,
-            but if we want to write into a FIFO we should use incr=0x0
+            but if we want to read from a FIFO we should use incr=0x0
 
         Returns:
             A list of 32bits words
         '''
-        raise NameError('Not correctly implemented at the moment')
-
+        UINT32P = POINTER(c_uint32)
         cycle       = c_uint(0)
-        user_data   = c_uint32(0xDEADBEEF)
-        CBFUNC = CFUNCTYPE(None, c_void_p, c_void_p, c_void_p,c_int)
-        cb          = CBFUNC(py_cb_func)
 
-        INTP = POINTER(c_uint32)
-        data = c_uint32(0xBADC0FFE)
-        pData = cast(addressof(data), INTP)
-        pUData = cast(addressof(user_data), INTP)
+#        user_data   = c_uint32(0xDEADBEEF)
+#        CBFUNC = CFUNCTYPE(None, c_uint16, c_uint16, c_uint16,c_int)
+#        cb          = CBFUNC(py_cb_func)
+#        pUData = cast(addressof(user_data), UINT32P)
 
-        print "%s %x %x %x" % (pData,addressof(data),addressof(cb),addressof(user_data))
+        dataVec= (c_uint32*(bsize/4))()
 
         ldata=[]
-        actsize=bsize
         addr=offset
-        status= self.lib.eb_cycle_open(self.device,pUData,cb,self.getPtrData(cycle))
+        i=0
+        status= self.lib.eb_cycle_open(self.device,0,0,self.getPtrData(cycle))
         if status: raise BusWarning('Cycle open : 0x%x, %s' % (offset,self.eb_status(status)))
-        while actsize>0:
+        while i<bsize:
+            pData = cast(addressof(dataVec)+i, UINT32P)
             self.lib.eb_cycle_read(cycle,addr,self.format,pData)
-            if self.verbose: print "@x%x < %x %s" % (addr, pData[0], pUData[0])
-            break
-            ldata.append(pData[0])
             addr=addr+incr
-            actsize=actsize-4
+            i=i+4
         status=self.lib.eb_cycle_close(cycle)
         if status: raise BusWarning('Cycle close: %s' % (self.eb_status(status)))
+        
+        ###Convert the c_uint32 array to list of c_uint32
+        ldata=[]
+        for d in dataVec: ldata.append(d)
+        
+        ## Print the result if we are using verbose
+        if self.verbose:
+            addr=offset
+            for d in dataVec:
+                print "@x%08X > %8x" % (addr, d)
+                addr=addr+incr
+                
+        return ldata
 
-
-        return 0;
 
     def devblockwrite(self, bar, offset, ldata, incr=0x4):
         '''Method that do a multiple cycle-writes to write a data block
@@ -309,7 +314,7 @@ class EthBone(GenDrvr):
         if status: raise BusWarning('Cycle open : 0x%x, %s' % (offset,self.eb_status(status)))
         for data in ldata:
             ##Chequear endianess de format
-            if self.verbose: print "@x%x > %x" % (addr, data)
+            if self.verbose: print "@x%08X > %8x" % (addr, data)
             self.lib.eb_cycle_write(cycle,addr,self.format,c_uint32(data))
             self.wcrc=binascii.crc32(c_uint32(data), self.wcrc)
             addr=addr+incr
@@ -369,7 +374,7 @@ class EthBone(GenDrvr):
         ##Check the CafeBabe ID
         id=(bus.read(EP_offset | REG_ID))
         print "0x%X" % id
-        if id != 0xcafebabe: raise("Error reading ID")
+        if id != 0xcafebabe: raise BaseException("Error reading ID")
         else: print "OK"
 
         ## Toogle the lowest 16bit of MAC address.
@@ -380,11 +385,11 @@ class EthBone(GenDrvr):
         bus.write(macaddr,newmac)
         rbmac= bus.read(macaddr)
         print "0x%X" % rbmac
-        if newmac!=rbmac:  raise("Error writing new MAC")
+        if newmac!=rbmac:  raise BaseException("Error writing new MAC")
         else: print "OK"
         bus.write(macaddr,oldmac)
         rbmac=(bus.read(macaddr))
-        if oldmac!=rbmac: raise("Error writing old MAC")
+        if oldmac!=rbmac: raise BaseException("Error writing old MAC")
         else: print "OK"
 
     def test_rwblock(self,RAM_offset=0x0, nwords=128):
@@ -410,23 +415,21 @@ class EthBone(GenDrvr):
         msg=""
         pos=0
         if d_start!=dataw[pos]:
-            msg=msg+"@0x%08x: writen=0x%08x,  readback=0x%08x" %(RAM_offset+4*pos,dataw[pos],d_start)
+            msg=msg+"@0x%08x: writen=0x%08x, readback=0x%08x " %(RAM_offset+4*pos,dataw[pos],d_start)
         pos=nwords/2
-        if d_start!=dataw[pos]:
-            msg=msg+"@0x%08x: writen=0x%08x,  readback=0x%08x" %(RAM_offset+4*pos,dataw[pos],d_start)
+        if d_mid!=dataw[pos]:
+            msg=msg+"@0x%08x: writen=0x%08x, readback=0x%08x " %(RAM_offset+4*pos,dataw[pos],d_mid)
         pos=nwords-1
-        if d_start!=dataw[pos]:
-            msg=msg+"@0x%08x: writen=0x%08x,  readback=0x%08x" %(RAM_offset+4*pos,dataw[pos],d_start)
-        if msg!="": raise(msg)
+        if d_end!=dataw[pos]:
+            msg=msg+"@0x%08x: writen=0x%08x, readback=0x%08x " %(RAM_offset+4*pos,dataw[pos],d_end)
+        if msg!="": raise BaseException(msg)
 
         datar=self.devblockread(0, RAM_offset, len(dataw)*4,4)
 
-        return 0
-        print datar
         if datar != dataw:
             for i in range(0,len(dataw)):
                 print "%3d x%08x " % (i,dataw[i])
-            raise("Error reading data block")
+            raise BaseException("Error reading data block")
 
 
     def dataToByteArray(self,data_list,bytearray_list=[]):
