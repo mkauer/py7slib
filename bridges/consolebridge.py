@@ -104,7 +104,7 @@ class ConsoleBridge() :
         '''
 
     @staticmethod
-    def scan(self, bus="all",subnet="192.168.7.0") :
+    def scan(bus="all",subnet="192.168.7.0") :
         '''
         Method to scan WR devices connected to the PC.
 
@@ -121,7 +121,7 @@ class ConsoleBridge() :
                 · "eth" : Scan only devices conneted to Ethernet with Etherbone.
                 · "serial" : Scan only devices conneted to a serial port.
             subnet(str) : Subnet IP address to scan for devices. Only used with
-            option "eth" or "all".
+            option "eth" or "all". Example: subnet="192.168.7.0/24".
 
 
         Returns:
