@@ -48,36 +48,36 @@ class BusWarning(BusException):
 class GenDrvr(object):
     '''
     Abstract class that represent the Generic Driver to access from Python to the device.
-    
+
     It is normally used in parallel with a library that call directly the system driver
     The following methods must be defined in the children class:
        * open()
        * close()
        * devwrite()
-       * devread() 
+       * devread()
     '''
     __metaclass__ = abc.ABCMeta
-    
+
     hdev=-1
     bar=0
     ndev=1 ##Actual number detected device on the bus
 
-        
+
     def load_lib(self,libname=""):
         ## First set library path
         libpath = os.getenv('LD_LIBRARY_PATH')
         here = os.getcwd()
         libpath = here+":/usr/lib:/usr/local/lib" if not libpath else here + ':' + libpath
         os.environ['LD_LIBRARY_PATH'] = libpath
-        
+
         ##Then load the library
         self.libname=libname
-        self.lib = cdll.LoadLibrary(self.libname)        
+        self.lib = cdll.LoadLibrary(self.libname)
 
 
 ###################### Abstract method that MUST be redefine                                           --
 
-        
+
     @abc.abstractmethod
     def open(self, LUN):
         '''
@@ -85,24 +85,24 @@ class GenDrvr(object):
         Args:
             LUN : Logical Unit Number (i,e. with PCIe it is the slot)
         '''
-        
+
     @abc.abstractmethod
     def close(self):
         '''
         Abstract method to close the device on which the driver perform
         '''
-        
+
     @abc.abstractmethod
     def devread(self, bar, offset, width):
         '''
         Abstract method that do a read on the devices
-        
+
         Args:
             bar : BAR used by PCIe bus
             offset : address within bar
             width : data size (1, 2, or 4 bytes)
         '''
-        
+
     @abc.abstractmethod
     def devwrite(self, bar, offset, width, datum):
         '''
@@ -113,8 +113,21 @@ class GenDrvr(object):
             datum : data value that need to be written
         '''
 
+    @staticmethod
+    @abc.abstractmethod
+    def scan(options=None) :
+        '''
+        Abstract method for scan the bus to find WR devices connected.
+
+        Args:
+            options : some buses need extra information for scanning.
+
+        Returns:
+            A list of ports where WR devices are connected.
+        '''
+
 ###################### Not implemented method that could be redefine
-        
+
     def devblockread(self, bar, offset, bsize, incr=0x4):
         '''
         Abstract method that do a read on the devices
@@ -122,9 +135,9 @@ class GenDrvr(object):
             offset : address within bar
             bsize : size in bytes
         '''
-        raise NameError('Undef function') 
+        raise NameError('Undef function')
         return 0;
-    
+
     def devblockwrite(self, bar, offset, ldata, incr=0x4):
         '''
         Abstract method that do a read on the devices
@@ -132,54 +145,54 @@ class GenDrvr(object):
             offset : address within bar
             ldata : list of data to write
         '''
-        raise NameError('Undef function') 
+        raise NameError('Undef function')
         return 0;
-        
-        
+
+
     def irqena(self):
         """enable the interrupt line"""
-        raise NameError('Undef function') 
+        raise NameError('Undef function')
         return 0;
 
     def getblocksize(self,index=0):
         """return the size of the allocated DMA buffer (in bytes)"""
-        raise NameError('Undef function') 
+        raise NameError('Undef function')
         return 0;
 
     def info(self):
         """get a string describing the interface the driver is bound to """
         return "%s" %(self.libname)
-    
+
 ###################### Shortcut methods
-        
+
     def read(self, offset):
         ''' Perform a simple 32b read '''
         return self.devread(self.bar, offset, 4)
-        
+
     def read32(self, offset):
         ''' Perform a simple 32b read '''
         return self.devread(self.bar, offset, 4)
-    
+
     def read16(self, offset):
         ''' Perform a simple 16b read '''
         return self.devread(self.bar, offset, 2)
-    
+
     def read8(self, offset):
         ''' Perform a simple 8b read '''
         return self.devread(self.bar, offset, 1)
-    
+
     def write(self, offset, datum):
         ''' Perform a simple 32b write '''
         self.devwrite(self.bar, offset, 4, datum)
-        
+
     def write32(self, offset, datum):
         ''' Perform a simple 32b write '''
         self.devwrite(self.bar, offset, 4, datum)
-    
+
     def write16(self, offset, datum):
         ''' Perform a simple 16b write '''
         self.devwrite(self.bar, offset, 2, datum)
-    
+
     def write8(self, offset, datum):
         ''' Perform a simple 8b write '''
         self.devwrite(self.bar, offset, 1, datum)
@@ -188,4 +201,3 @@ class GenDrvr(object):
     def getPtrData(data):
        INTP = POINTER(c_uint)
        return cast(addressof(data), INTP)
-    

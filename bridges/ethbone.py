@@ -44,6 +44,7 @@ Install lua libraries
 @file
 @date Created on Jun 16, 2015
 @author Benoit Rat (benoit<AT>sevensols.com)
+@author Felipe Torres (ftorres<AT>sevensols.com)
 @copyright LGPL v2.1
 @see http://www.ohwr.org
 @see http://www.sevensols.com
@@ -78,6 +79,7 @@ import struct
 
 # Import common modules
 from gendrvr import *
+from subprocess import check_output
 import binascii
 
 EB_PROTOCOL_VERSION = 1
@@ -278,18 +280,18 @@ class EthBone(GenDrvr):
             i=i+4
         status=self.lib.eb_cycle_close(cycle)
         if status: raise BusWarning('Cycle close: %s' % (self.eb_status(status)))
-        
+
         ###Convert the c_uint32 array to list of c_uint32
         ldata=[]
         for d in dataVec: ldata.append(d)
-        
+
         ## Print the result if we are using verbose
         if self.verbose:
             addr=offset
             for d in dataVec:
                 print "@x%08X > %8x" % (addr, d)
                 addr=addr+incr
-                
+
         return ldata
 
 
@@ -479,3 +481,79 @@ class EthBone(GenDrvr):
                     last_packet.append(data_words[i+l])
                 data_packets.append(last_packet)
         return data_packets
+
+
+    @staticmethod
+    def scan(options) :
+        '''
+        Method for scan the bus to find WR devices connected.
+
+        This method is aided by "fping" to make a fast scan. If "fping" is not
+        available in the system, a slow scan will be performed (bcast vs. individual
+        ping). Also Etherbone support must be installed in the system.
+
+        Args:
+            options (str) : subnet IP and mask to make the scan. Example: "192.168.1.0/24"
+
+        Returns:
+            A list of ports where WR devices are connected.
+
+        Raises:
+
+        '''
+        if options == None or type(options) != type("") :
+            raise InvalidParam("Invalid IP/Mask specified")
+
+        subnet = options
+        devices = []
+
+        # If fping is installed, only check with eb-discover alive IPs
+        if not os.system("command -v fping > /dev/null") :   # FAST MODE
+            # Retrieve a list of alive devices in the subnet
+            cmd = """fping -C 1 -q -g %s 2>&1 | grep -v \": -\"""" % (subnet)
+            raw_alive_devs = check_output(cmd,shell=True).splitlines()
+            unknown_devices = [None, ] * len(raw_alive_devs)
+            i = 0
+            for dev in raw_alive_devs :
+                unknown_devices[i] = dev.split(":")[0].rstrip(' ')
+                i += 1
+            raw_alive_devs = None
+
+            # Now check which ones are WR devices using eb-discover
+            for udev in unknown_devices :
+                args = "udp/%s" % (udev)
+                ret = check_output(["eb-discover", args])
+                if ret != '' : # is a WR device
+                    devices.append(udev)
+
+        else :                                               # SLOW MODE
+            # Scan to find WR devices in the network
+            ip, bcast = subnet.split("/")
+            end = int( (( math.ceil((32-int(bcast)) / 8.0) % 3) * 2) % 3 )
+            lip = ip.split(".")[:end+1]
+
+            buildNextSubnet = lambda root : root.append('0')
+            # Generate next ip
+            nextIP = lambda ip : ip.append( str( int(ip.pop())+1 ) ) if int(ip[-1]) < 255 else False
+            # Check wether a ip direction is complete
+            isLastByte = lambda ip : (len(ip) == 4) if (type(ip) == type(list())) else (len(ip.split(".")) == 4)
+
+            def checkDevices(ip,devices) :
+                for i in range(1,255) :
+                    ip[-1] = str(i)
+                    print "probando ip: %s" % ('.'.join(ip))
+                    if isLastByte(ip) :
+                        args = "udp/%s" % (ip if type(ip) == type("") else '.'.join(ip))
+                        ret = check_output(["eb-discover", args])
+                        if ret != '' : # is a WR device
+                            devices.append('.'.join(ip))
+                        if int(ip[-1]) == 254 : return
+
+                    else :
+                        checkDevices( buildNextSubnet(ip) )
+
+
+            buildNextSubnet(lip)
+            checkDevices(lip,devices)
+
+        return devices
