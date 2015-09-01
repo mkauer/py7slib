@@ -37,22 +37,10 @@ class ConsoleBridge() :
         interface (str) : Interface used for the connection
     '''
 
-    def __init__(self) :
-        '''
-        Class constructor
-        '''
-
-        self.port = ""
-        self.interface = ""
-
     @abc.abstractmethod
-    def open(self, interface, port) :
+    def open(self) :
         '''
         Method to open a new connection with a WR device.
-
-        Args:
-            interface (str) : Specifies the connection type: "eth" or "pci".
-            port (str) : Specifies the port/ip direction for the device.
 
         Raises:
             ConsoleError : When the specified device fails opening.
@@ -68,25 +56,9 @@ class ConsoleBridge() :
         '''
 
     @abc.abstractmethod
-    def ask(self, cmd) :
+    def setCommand(self, cmd) :
         '''
-        Method for reading the value of a parameter of the device.
-
-        This method writes a command to the input of the device and retrieves
-        the response of it.
-
-        Args:
-            cmd (str) : Command
-
-        Raises:
-            CmdNotValid : When the passed command is not accepted by the device.
-            ConsoleError : When an error was occured while reading/writing.
-        '''
-
-    @abc.abstractmethod
-    def cmd(self, cmd) :
-        '''
-        Method to set the value of a parameter of the device.
+        Method to pass a command to a WR device
 
         This method writes a command to the input and retrieves the device
         response (if any).
@@ -103,8 +75,17 @@ class ConsoleBridge() :
             ConsoleError : When an error was occured while reading/writing.
         '''
 
+    @abc.abstractmethod
+    def isOpen(self) :
+        '''
+        This method checks wheter device connection is stablished.
+
+        Returns:
+            True if open() method has previously called, False otherwise.
+        '''
+
     @staticmethod
-    def scan(bus="all",subnet="192.168.7.0") :
+    def scan(bus="all", subnet) :
         '''
         Method to scan WR devices connected to the PC.
 
