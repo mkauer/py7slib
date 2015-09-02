@@ -34,7 +34,7 @@ from ctypes import *
 import os, errno, re, sys, struct
 import os.path
 # Import common modules
-from gendrvr import *
+from py7s-lib.core.gendrvr import *
 
 
 # python 2.4 kludge

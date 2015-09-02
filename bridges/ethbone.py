@@ -78,7 +78,7 @@ import struct
 
 
 # Import common modules
-from gendrvr import *
+from py7s-lib.core.gendrvr import *
 from subprocess import check_output
 import binascii
 

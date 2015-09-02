@@ -26,9 +26,9 @@ Implement the access to wishbone UART
 # download it from http://www.gnu.org/licenses/lgpl-2.1.html                   |
 #------------------------------------------------------------------------------|
 
-from pts_core.main.ptsexcept import *
-from pts_core.misc.serial_str_cleaner import *
-from gendrvr import *
+from py7s-lib.core.p7sException import *
+from py7s-lib.core.serial_str_cleaner import *
+from py7s-lib.core.gendrvr import *
 import subprocess
 import os
 import serial
@@ -42,7 +42,7 @@ class wb_UART(GenDrvr) :
     Example of use:
     '''
 
-    def __init__(self, plog, baudrate=115200, rdtimeout=0.1, wrtimeout=0.1, interchartimeout=0.0005, ntries=2):
+    def __init__(self, verbose=False, baudrate=115200, rdtimeout=0.1, wrtimeout=0.1, interchartimeout=0.0005, ntries=2):
         '''
         Class constructor
 
@@ -52,7 +52,7 @@ class wb_UART(GenDrvr) :
             interchartimeout (int) : Timeout between characters
             rdtimeout (int) : Read timeout
             ntries (int) : How many times retry a read or a write
-            plog (PTSLogger) : The logger
+            verbose (bool) : Activates the verbose output
 
         '''
         self.PORT = "/dev/ttyUSB"
@@ -62,7 +62,7 @@ class wb_UART(GenDrvr) :
         self.RDTIMEOUT = rdtimeout
         self._serial = None
         self.ntries = ntries
-        self.logger = plog
+        self.verbose = verbose
 
     def open(self, LUN=0) :
         '''
@@ -80,20 +80,22 @@ class wb_UART(GenDrvr) :
             self._serial = serial.Serial(port=self.PORT, baudrate=self.BAUDRATE,\
             timeout=self.RDTIMEOUT, writeTimeout=self.WRTIMEOUT, interCharTimeout=self.INTERCHARTIMEOUT)
             self._serial.flushOutput()
-            self.logger.dbg ("Port %s succesfully opened " % (self.PORT))
+            if self.verbose :
+                print ("Port %s succesfully opened " % (self.PORT))
         except ValueError as e:
-            msg = "ERROR opening serial port %s" % (self.PORT)
-            raise PtsError(msg)
+            msg = "Error opening serial port %s" % (self.PORT)
+            raise Error(msg)
         except serial.SerialException as e:
-            msg = "ERROR: can't open %s" % (self.PORT)
-            raise PtsError(msg)
+            msg = "%s port could not be opened" % (self.PORT)
+            raise Error(msg)
 
     def close(self) :
         '''
         Close serial communication
         '''
         self._serial.close()
-        self.logger.dbg ("Port %s succesfully closed " % self.PORT)
+        if self.verbose :
+            print ("Port %s succesfully closed " % self.PORT)
 
     def devread(self, bar, offset, width) :
         '''
@@ -123,7 +125,7 @@ class wb_UART(GenDrvr) :
 
                 if bwr != len(cmd):
                     if ntries <= 0 :
-                        raise PtsError("ERROR: Write of command string '%s' failed. \
+                        raise Retry("Write of command string '%s' failed. \
                         Bytes writed : %d of %d." % (cmd, bwr,len(cmd)))
                     else : read_ok = False
 
@@ -138,7 +140,7 @@ class wb_UART(GenDrvr) :
                 # Remember: '\r' is inserted to cmd
                 if cmd[:-1] != clean :
                     if ntries <= 0:
-                        raise PtsError("ERROR: Write of command %s failed : '%s'" \
+                        raise Retry("Write of command %s failed : '%s'" \
                         % (cmd, clean))
                     else : read_ok = False
 
@@ -151,7 +153,7 @@ class wb_UART(GenDrvr) :
             return int(rd[:-1],0)
 
         except serial.SerialTimeoutException as e :
-            self.logger.err("Error: Write timeout (%d sec) exceeded : '%s'" % (self.WRTIMEOUT,e))
+            raise Retry("Write timeout (%d sec) exceeded : '%s'" % (self.WRTIMEOUT,e))
 
 
 
@@ -171,7 +173,8 @@ class wb_UART(GenDrvr) :
             check : Enables check of writed data
         '''
         cmd = "wb write 0x%X 0x%X\r" % (offset, datum)
-        self.logger.dbg("\t %s" % (cmd))
+        if self.verbose :
+            print("\t %s" % (cmd))
         ntries = self.ntries
         read_ok = True
 
@@ -190,7 +193,7 @@ class wb_UART(GenDrvr) :
 
                 if bwr != len(cmd):
                     if ntries <= 0:
-                        raise PtsError("ERROR: Write of string %s failed. Bytes writed : %d of %d.\n"\
+                        raise Retry("Write of string %s failed. Bytes writed : %d of %d.\n"\
                         % (cmd, bwr,len(cmd)))
                     else : read_ok = False
 
@@ -204,7 +207,7 @@ class wb_UART(GenDrvr) :
                 # Remember: '\r' is inserted to cmd
                 if cmd[:-1] != clean:
                     if ntries <= 0:
-                        raise PtsError("ERROR: Write of command %s failed : %s.\n"\
+                        raise Retry("Write of command %s failed : %s.\n"\
                         % (cmd, clean))
                     else : read_ok = False
 
@@ -215,7 +218,7 @@ class wb_UART(GenDrvr) :
             return bwr
 
         except serial.SerialTimeoutException as e :
-            self.logger.err ("Error: Write timout (%d sec) exceeded : %s\n" % (self.WRTIMEOUT,e))
+            raise Retry("Write timout (%d sec) exceeded : %s\n" % (self.WRTIMEOUT,e))
 
 
     def cmd_w(self, cmd, output=True) :
@@ -231,7 +234,8 @@ class wb_UART(GenDrvr) :
             PtsError
         '''
         cmd = "%s\r" % cmd
-        self.logger.dbg("\t %s" % (cmd))
+        if self.verbose :
+            print("\t %s" % (cmd))
 
         try :
             self._serial.flushInput()
@@ -245,7 +249,7 @@ class wb_UART(GenDrvr) :
             self._serial.flush() # Wait until all data is written
 
             if bwr != len(cmd):
-                raise PtsError("ERROR: Write of string %s failed. Bytes writed : %d of %d." % (cmd, bwr,len(cmd)))
+                raise Retry("Write of string %s failed. Bytes writed : %d of %d." % (cmd, bwr,len(cmd)))
 
             time.sleep(self.WRTIMEOUT)
             rd = self._serial.readline()#.decode('UTF-8')
@@ -264,4 +268,4 @@ class wb_UART(GenDrvr) :
             return ret
 
         except serial.SerialTimeoutException as e :
-            print ("Error: Write timout (%d sec) exceeded : %s" % (self.WRTIMEOUT,e))
+            raise Retry("Write timout (%d sec) exceeded : %s" % (self.WRTIMEOUT,e))

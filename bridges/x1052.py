@@ -33,7 +33,7 @@ This file contains the x1052 class which is a child of the abstract class GenDrv
 import subprocess
 import os
 # Import common modules
-from gendrvr import *
+from py7s-lib.core.gendrvr import *
 
 class X1052(GenDrvr):
     '''

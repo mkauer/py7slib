@@ -36,8 +36,8 @@ This file is based on the official version 1.1 of sdb.h
 import os
 from ctypes import *
 import ctypes
-from gendrvr import *
-from pts_core.main.tools import BitManip
+from py7s-lib.core.gendrvr import *
+from py7s-lib.core.tools import BitManip
 
 # Define specific for SDB Flags
 SDB_MAGIC                   = 0x5344422d

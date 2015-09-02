@@ -8,7 +8,7 @@ The class and methods here still needs a little bit of clean-up
 @copyright LGPL v2.1
 @see http://www.ohwr.org
 @see http://www.sevensols.com
-@ingroup main
+@ingroup core
 '''
 #------------------------------------------------------------------------------|
 #                   GNU LESSER GENERAL PUBLIC LICENSE                          |

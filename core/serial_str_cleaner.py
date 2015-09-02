@@ -9,7 +9,7 @@ File with an auxiliar class for cleaning strings transmited by LEN UART
 @copyright LGPL v2.1
 @see http://www.ohwr.org
 @see http://www.sevensols.com
-@ingroup misc
+@ingroup core
 '''
 
 

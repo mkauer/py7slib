@@ -34,7 +34,7 @@ import subprocess
 import os
 
 # Import common modules
-from gendrvr import *
+from py7s-lib.core.gendrvr import *
 
 class DevMem(GenDrvr):
     '''Class to interface all embedded devices that map the FPGA address space.

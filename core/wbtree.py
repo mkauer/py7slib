@@ -7,7 +7,7 @@ The class in this files are designed to ease the process to Read/Write to the el
 @author Benoit Rat (benoit<AT>sevensols.com)
 @copyright LGPL v2.1
 @see http://www.sevensols.com
-@ingroup main
+@ingroup core
 '''
 #------------------------------------------------------------------------------|
 #                   GNU LESSER GENERAL PUBLIC LICENSE                          |
@@ -29,7 +29,7 @@ The class in this files are designed to ease the process to Read/Write to the el
 # Import system modules
 
 # Import custom modules
-from pts_core.main.ptsexcept import PtsInvalid
+from py7s-lib.core.p7sException import *
 
 
 class WBOperator(object):

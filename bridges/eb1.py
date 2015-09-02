@@ -33,7 +33,7 @@ This file contains the eb1 class which is a child of the abstract class GenDrv (
 import subprocess
 import os
 # Import common modules
-from gendrvr import *
+from py7s-lib.core.gendrvr import *
 
 class EB1(GenDrvr):
     '''The EB1 class has been created to interface WB access within the WRS. 
