@@ -34,7 +34,7 @@ from ctypes import *
 import os, errno, re, sys, struct
 import os.path
 # Import common modules
-from py7s-lib.core.gendrvr import *
+from py7slib.core.gendrvr import *
 
 
 # python 2.4 kludge
@@ -44,30 +44,30 @@ if not 'SEEK_SET' in dir(os):
 class FileMem(GenDrvr):
     '''
     This class is used for debugging or developing purpose only.
-    
+
     It can fake behaviour without the need of a real device.
     '''
-    
+
     fid=None
 
     def __init__(self, fpath):
         """Constructor method: call open()"""
         self.open(fpath)
-        
+
     def __del__(self):
         self.fid.close()
-        
+
     def open(self,fpath):
         """Open a read/write file using filepath"""
         self.fid = open(fpath,'r+')
-        
+
     def close(self):
         """Flush and close the file"""
         self.fid.flush()
         self.fid.close()
-        
-    
-        
+
+
+
     def find(self,address):
         """Find a value at a specific address"""
         line=self.fid.readline()
@@ -83,13 +83,13 @@ class FileMem(GenDrvr):
         if pos>=0:
             val=re.search('@0x%08X: 0x([0-9a-f]{8})' % (address),line, re.IGNORECASE).group(1)
             val=int(val,16)
-        return {'pos':pos, 'val':val} 
-        
+        return {'pos':pos, 'val':val}
+
 
     def devread(self, bar, offset, width):
         '''
         Method that do a read on the opened file
-        
+
         Args:
             bar : BAR used by PCIe bus (not need here)
             offset : address within bar
@@ -97,14 +97,14 @@ class FileMem(GenDrvr):
         '''
         address = offset
         ret=self.find(address)
-        print "R: @0x%08X: 0x%08x (%d)" % (address, ret['val'],ret['pos'])  
+        print "R: @0x%08X: 0x%08x (%d)" % (address, ret['val'],ret['pos'])
         return ret['val']
 
 
     def devwrite(self, bar, offset, width,datum):
         '''
         Method that do a write of datatum on the opened file
-        
+
         Args:
             bar : BAR used by PCIe bus (not need here)
             offset : address within bar
@@ -118,7 +118,3 @@ class FileMem(GenDrvr):
             self.fid.seek(ret["pos"])
         print "W: %s" % (wstr)
         self.fid.write(wstr+"\n")
-
-
-
-    

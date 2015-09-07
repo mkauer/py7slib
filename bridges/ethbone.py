@@ -78,7 +78,7 @@ import struct
 
 
 # Import common modules
-from py7s-lib.core.gendrvr import *
+from py7slib.core.gendrvr import *
 from subprocess import check_output
 import binascii
 
@@ -499,10 +499,10 @@ class EthBone(GenDrvr):
             A list of ports where WR devices are connected.
 
         Raises:
-
+            BadData: if "options" param doesn't contains a valid ip/mask.
         '''
         if options == None or type(options) != type("") :
-            raise InvalidParam("Invalid IP/Mask specified")
+            raise BadData(str(options))
 
         subnet = options
         devices = []

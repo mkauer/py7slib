@@ -5,7 +5,7 @@
 Introduction
 ============
 
-The **py7s-lib** is a private repository containing the Python code developed. This
+The **py7slib** is a private repository containing the Python code developed. This
 repository contains the Python drivers used to handle communication with the WR
 devices. Also, high-level control code is included, as many tools.
 

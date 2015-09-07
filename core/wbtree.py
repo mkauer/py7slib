@@ -29,27 +29,27 @@ The class in this files are designed to ease the process to Read/Write to the el
 # Import system modules
 
 # Import custom modules
-from py7s-lib.core.p7sException import *
+from py7slib.core.p7sException import *
 
 
 class WBOperator(object):
     """
     Generic class to R/W from/to registers using the GenDrvr bus.
-    
+
     This class has been designed as an helper for other classes
-    in order to ease the R/W process to specific bit/field in a register. 
+    in order to ease the R/W process to specific bit/field in a register.
     """
-    
+
     def __init__(self, bus):
         """
         Constructor
-        
+
         Args:
             bus: An instantiation of the GenDrvr bus (i.e: GennumDrvr)
         """
         self.bus=bus
         self.base_addr=0x0
-    
+
     def read(self, offset):
         """
         Read a value from an offset
@@ -61,12 +61,12 @@ class WBOperator(object):
         Write a value to an offset
         """
         self.bus.write(self.base_addr+offset, value)
-        
-        
+
+
     def wr_bit(self, addr, bit, value):
         """
         Write a bit to a register
-        
+
         Args:
             addr: Address of the register
             bit: bit position to read/write
@@ -82,38 +82,38 @@ class WBOperator(object):
     def rd_bit(self, addr, bit):
         """
         Read a bit from a register
-        
+
         Args:
             addr: Address of the register
             bit: bit position to read/write
-            
+
         Returns:
             The bit value (0/1)
         """
         if(self.read(addr) & (1<<bit)):
             return 1
         else:
-            return 0    
+            return 0
 
     def rd_rfld(self,offset,position, width=1):
         """
         Read a register field
-        
+
         Args:
             offset: Offset of the register
             position: Position of the field
             width: Width of the field
-        
+
         Returns:
             The field value
         """
         data=self.read(offset)
         return (data >> position) & (pow(2,width)-1)
-    
+
     def wr_rfld(self,offset,val, position, width=1):
         """
         Write a register field
-        
+
         Args:
             offset: Offset of the register
             val:  The field value
@@ -125,52 +125,52 @@ class WBOperator(object):
         data= (data & ~mask) | ((val << position) & mask)
         #print '@0x%03x < val=0x%08x (val=%d, pos=%d, mask=%08X, width=%d)' % (offset, data, val, position,mask, width)
         self.write(offset,data)
-        
+
 
 
 class WBPeriph(WBOperator):
     """
     Class that represent a WBPeriph with various registers and fields
-    
+
     This class is a child of WBOperator in order to access easily to/from the registers
     """
-    
+
     def __init__(self, bus, base_addr,name):
         self.bus = bus
         self.base_addr = base_addr
         self.name = name
         self.fields={}
         self.regs=[];
-        
+
     def append(self,wbfield):
         """
         Append a WBField to the WBperiph
         """
-        
+
         if self.fields.has_key(wbfield.name):
-            raise NameError('Field name already used by this peripheral') 
+            raise NameError('Field name already used by this peripheral')
         #print wbfield
         i_reg=int(wbfield.offset/4)
         try:
             reg=self.regs.pop(i_reg)
         except IndexError:
-            reg=[] 
+            reg=[]
         reg.append(wbfield)
         self.regs.insert(i_reg, reg)
         self.fields[wbfield.name]=wbfield
         return wbfield
-        
-        
+
+
     def wr_field(self,fldname,value):
         """
         Write to a field using its name
         """
-        
+
         if self.fields.has_key(fldname):
             return self.fields[fldname].write(value)
         else:
             raise PtsInvalid("field '%s' is does not exist" % (fldname))
-            
+
     def rd_field(self,fldname):
         """
         Read to a field using its name
@@ -179,13 +179,13 @@ class WBPeriph(WBOperator):
             return self.fields[fldname].read()
         else:
             raise PtsInvalid("field '%s' is does not exist" % (fldname))
-              
 
-        
+
+
     def get_str(self,fldname=None):
         """
         Return a string to describe this WBField
-        
+
         @param fldname: If none we will print all the fields in the periph
         otherwise we print only a specific field.
         """
@@ -202,17 +202,17 @@ class WBPeriph(WBOperator):
         return retstr
 
 
-    
+
 class WBField:
     """
     Class that represent a WBField (value inside a register).
     """
-    
-    
+
+
     def __init__(self,prh, offset, name, pos, width=1, desc=""):
         """
         Constructor method
-        
+
         Args:
             prh: The WBPeriph object
             offset: Register offset inside the WBPeriph
@@ -221,13 +221,13 @@ class WBField:
             width: Width of the field (1 if the field is a bit)
             desc: Message to describe a little bit more about this field (used for debug/log)
         """
-        
+
         self.prh= prh
         self.name = name
-        
+
         self.offset= offset-(offset%4)
         self.pos=pos+8*(offset%4)
-        
+
         self.width=width
         self.desc=desc
 
@@ -237,17 +237,17 @@ class WBField:
         else:
             str_pos="[%02d-%02d]" %(self.pos+self.width-1,self.pos)
         return "%-15s => %d (@0x%08X , %s)" % (self.name, self.read(), self.prh.base_addr+self.offset, str_pos)
-        
+
     def read(self):
         return self.prh.rd_rfld(self.offset,self.pos,self.width)
-        
+
     def write(self,val):
         return self.prh.wr_rfld(self.offset,val,self.pos,self.width)
-        
+
     def check(self, expect_val):
         """
         Check that the field as the expected value
-        
+
         Returns:
             A tupple with (true/false, error message)
         """
@@ -257,6 +257,3 @@ class WBField:
         if ret:
             msg+=val+" don't have correct value (%d)\n" %(expect_val)
         return (ret,msg)
-        
-        
-        

@@ -34,44 +34,44 @@ import subprocess
 import os
 
 # Import common modules
-from py7s-lib.core.gendrvr import *
+from py7slib.core.gendrvr import *
 
 class DevMem(GenDrvr):
     '''Class to interface all embedded devices that map the FPGA address space.
-    
+
     The DevMem class has been created to interface in a slow but universal
     way all embedded devices that map the FPGA address space by using /dev/mem
-    devices. 
-    
+    devices.
+
     This class simply used the `devmem` command tool to write/read value using
     calls to the OS terminal.
-    
+
     Attributes:
         bar : Bar is the offset that need to be used by devmem
     '''
-    
+
     def __init__(self, bar):
         '''
         Constructor
-        
+
         Args:
             bar : he offset that need to be used by devmem
         '''
         self.bar=bar
-        
+
     def open(self, LUN):
         '''Do nothing
         '''
         print "opened"
-        
+
     def close(self):
         '''Do nothing
         '''
         print "closed"
-        
+
     def devread(self, bar, offset, width):
         '''Method that do a read on the devices using /dev/mem device
-        
+
         Args:
             bar : BAR used by PCIe bus
             offset : address within bar
@@ -80,11 +80,11 @@ class DevMem(GenDrvr):
         ret=subprocess.check_output(["devmem","0x%08X" %(bar+offset), "%d" %(width*8)]).rstrip()
         print "%s (devmem 0x%08X)" % (ret, bar+offset)
         return c_uint(int(ret,0)).value;
-        
-        
+
+
     def devwrite(self, bar, offset, width, datum):
         '''Method that do a write on the devices using /dev/mem device
-        
+
         Args:
             bar : BAR used by PCIe bus
             offset : address within bar
@@ -96,5 +96,5 @@ class DevMem(GenDrvr):
         cmd="devmem 0x%08X %d 0x%08x" %(bar+offset, width*8,data.value)
         print cmd
         ret=os.system(cmd)
-        if ret !=0: 
+        if ret !=0:
             raise BusException("Bad return while Writing @ 0x%x \n(%s)" %(bar+offset,cmd))

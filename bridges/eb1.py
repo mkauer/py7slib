@@ -33,45 +33,45 @@ This file contains the eb1 class which is a child of the abstract class GenDrv (
 import subprocess
 import os
 # Import common modules
-from py7s-lib.core.gendrvr import *
+from py7slib.core.gendrvr import *
 
 class EB1(GenDrvr):
-    '''The EB1 class has been created to interface WB access within the WRS. 
-    
+    '''The EB1 class has been created to interface WB access within the WRS.
+
     We have create a simple library that open the device and can perform
     read/write on the WB bus.
     The read/write block data function are not implemented for this driver
-    to keep it as simple as possible. 
+    to keep it as simple as possible.
     '''
-    
+
     def __init__(self,LUN, show_dbg=False):
         '''Constructor
-        
+
         Args:
             LUN : the logical unit, with this driver it is not need as we should have only one WB bus on the FPGA connected to the ARM CPU
             show_dbg : enables debug info
         '''
         self.show_dbg=show_dbg
         self.load_lib("libeb1.so")
-        
+
         if self.show_dbg: print self.info()+"\n"
         self.open(LUN)
-        
+
     def open(self, LUN):
         '''Open the device and map to the FPGA bus
         '''
         self.hdev=self.lib.EB1_open()
         if self.hdev==0:
             raise NameError("Could not open device")
-        
+
     def close(self):
         '''Close the device and unmap
         '''
         self.lib.EB1_close()
-        
+
     def devread(self, bar, offset, width):
         '''Method that do a read on the devices using /dev/mem device
-        
+
         Args:
             bar : BAR used by PCIe bus
             offset : address within bar
@@ -84,13 +84,13 @@ class EB1(GenDrvr):
         ret=self.lib.EB1_wishbone_RW(self.hdev,c_uint(address),pData,0)
         if self.show_dbg: print "R@x%08X > 0x%08x" %(address, pData[0])
         if ret !=0:
-            raise NameError('Bad Wishbone Read') 
+            raise NameError('Bad Wishbone Read')
         return pData[0]
-        
-        
+
+
     def devwrite(self, bar, offset, width, datum):
         ''' Method that do a write on the devices using /dev/mem device
-        
+
         Args:
             bar : BAR used by PCIe bus
             offset : address within bar
@@ -104,13 +104,11 @@ class EB1(GenDrvr):
         if self.show_dbg: print "W@x%08X < 0x%08x" %( address, pData[0])
         ret=self.lib.EB1_wishbone_RW(self.hdev,c_uint(address),pData,1)
         if ret !=0:
-            raise NameError('Bad Wishbone Write @0x%08x > 0x%08x (ret=%d)' %(address,datum, ret)) 
+            raise NameError('Bad Wishbone Write @0x%08x > 0x%08x (ret=%d)' %(address,datum, ret))
         return pData[0]
-    
+
     def info(self):
         """get a string describing the interface the driver is bound to """
         inf = (c_char*60)()
         self.lib.EB1_version(inf)
         return "EB1 library (%s): git rev %s" % (self.libname,inf.value)
-
-
