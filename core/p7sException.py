@@ -28,18 +28,34 @@ Custom exceptions
 
 class p7sException(Exception) :
     # definir los códigos de error
+    def __init__(self, errcode, msg) :
+        '''
+        Constructor
+
+        Formats output string
+        '''
+        self.errmsg = "%s%s" % (self.messages[errcode], msg)
+        self.errcode = errcode
 
 class Retry(p7sException) :
     '''
     This exception indicates to caller that the operation failed and it should be retried.
     '''
-    pass
+    BADINTERFACE = (1,"Wrong interface selected. List of available interfaces: ")
 
 class BadData(p7sException) :
     '''
     Exception used to indicate that any of the passed parameters are invalid.
     '''
+    messages = {}
+    messages[1] = "No valid interface selected. Valid interfaces are : "
+    messages[2] = "No valid IP : "
+    messages[3] = "No valid PCI port : "
+
 class Error(p7sException) :
     '''
     Exception used for critical errors that should stop the execution of the caller.
     '''
+    messages = {}
+    messages[1] = "Not availabe: "
+    messages[2] = "Error closing driver : "
