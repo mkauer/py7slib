@@ -26,78 +26,196 @@ The VUART_bridge class allows to connect with WR devices over Etherbone or PCI b
 #------------------------------------------------------------------------------|
 
 # Imports
-import os
-import math
-from subprocess import check_output
-from pts_core.bridges.consolebridge import *
+import re
+import time
 
-class VUART_bridge(ConsoleBridge) :
+from subprocess import check_output
+from py7slib.bridges.consolebridge import ConsoleBridge
+from py7slib.bridges.ethbone import EthBone
+from py7slib.core.p7sException import *
+from py7slib.bridges.sdb import SDBNode
+from py7slib.core.gendrvr import BusCritical, BusWarning
+
+class VUART_bridge(ConsoleBridge):
     '''
     Class to handle connection with WR devices through the Virtual UART.
 
     This class implements the interface defined in ConsoleBridge abstract class
     for devices connected on the PCI bus or Ethernet (using Etherbone).
     '''
+      # Device ID for SPEC board (only one with PCI interface)
+    PCI_DEVICE_ID_SPEC = 0x018d
+    # Vendor ID for CERN
+    VENDOR_ID_CERN = 0xce42
+    # Vendor ID for SevenSolutions
+    VENDOR_ID_7SOLS = 0x7501
+    # WR-Periph-UART
+    WR_UART_ID = 0xe2d13d04
 
-    def open(self, interface, port) :
+    # Virtual UART register config
+    VUART_TX_REG = 0x10
+    VUART_RX_REG = 0x14
+    VUART_RDY_MSK = 0x100
+    VUART_RX_CNT_MSK = 0x1FFFE00
+    VUART_RX_DAT_MKS = 0xFF
+    VUART_OFFSET = None
+    # Regular expression for a valid ip/mask
+    valid_ip = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"
+    # Regular expression for a valid pci port
+    valid_pciport = r"\d{2}:\d{2}\.\d$"
+
+    # Max timeout value (in seconds)
+    MAX_TIMEOUT = 5
+
+    def __init__(self, interface, port, verbose=False):
+        '''
+        Constructor
+
+        Args:
+            interface (str) : Indicates the bus used for the connection: "eth" or "pci".
+            port (str) : Port number or IP/mask. Examples: "01:00.0" for pci, and
+            "192.168.1.1" for ethernet.
+            verbose (bool) : Enables verbose output
+
+        Raises:
+            BadData exception if any of the input parameters are not valid.
+        '''
+        # Input control
+        if interface != "eth" and interface != "pci":
+            raise BadData(1, "eth/pci")
+        if interface == "eth" and not re.match(self.valid_ip,port):
+            raise BadData(2, port)
+        if interface == "pci" and not re.match(self.valid_pci,port):
+            raise BadData(3, port)
+
+        self.interface = interface
+        self.port = "udp/"+port
+        self.bus = None
+        self.verbose = verbose
+
+    def open(self, ethbone_dbg=False):
         '''
         Method to open a new connection with a WR device.
 
         Args:
-            interface (str) : Specifies the connection type: "eth" or "pci".
-            port (str) : Specifies the port/ip direction for the device.
+            ethbone_dbg (bool) : Flag to enable verbose output for the EtherBone driver.
 
         Raises:
             ConsoleError : When the specified device fails opening.
         '''
+        if self.interface == 'eth':
+            try:
+                self.bus = EthBone(self.port, False)
+            except BusCritical:
+                BadData(4, self.port)
+        elif self.interface == 'pci':
+            raise Error(1, "PCI bus not implemented")
 
-    PCI_DEVICE_ID_SPEC = 0x018d
-    PCI_VENDOR_ID_CERN = 0x10dc
+        # Look for VUART address in the sdb bus
+        sdb = SDBNode(self.bus, None)
+        sdb.base = sdb.scan()
+        sdb.parse()
+        self.VUART_OFFSET = sdb.findProduct(self.VENDOR_ID_CERN, self.WR_UART_ID)[0][1] # Check this assignment
+        if self.verbose:
+            print("VUART address is 0x%x" % (self.VUART_OFFSET))
 
-    def close(self) :
+    def isOpen(self):
+        '''
+        This method checks wheter device connection is stablished.
+
+        Returns:
+            True if open() method has previously called, False otherwise.
+        '''
+        return (self.bus is not None)
+
+    def close(self):
         '''
         Method to close an existing connection with a WR device.
 
         Raises:
             ConsoleError : When the connection fails closing.
         '''
+        try:
+            bus.close()
+        except BusCritical as e:
+            raise Error(2, e.message)
 
-    def ask(self, cmd) :
+    def flushInput(self):
         '''
-        Method for reading the value of a parameter of the device.
+        Method to clear read buffer of the VUART
 
-        This method writes a command to the input of the device and retrieves
-        the response of it.
-
-        Args:
-            cmd (str) : Command
-
-        Raises:
-            CmdNotValid : When the passed command is not accepted by the device.
-            ConsoleError : When an error was occured while reading/writing.
+        Use this method before calling sendCommand the first time in order to
+        clear the data in the read buffer of the Virtual UART
         '''
+        if self.bus is None:
+            raise algo
 
-    def cmd(self, cmd) :
+        if self.verbose:
+            print("Erasing old content of rx buffer in the VUART")
+
+        self.sendCommand("\x1b\r", buffered=False)
+
+    def sendCommand(self, cmd, buffered=False):
         '''
-        Method to set the value of a parameter of the device.
+        Method to pass a command to the Virtual UART module of a WR Device
 
         This method writes a command to the input and retrieves the device
-        response (if any).
+        response (if any). If buffered is used, the driver will package multiple
+        rw_cmd commands into a same packet.
+
+        TODO: Implement buffered logic
+
+        Note for developers:
+        Returned value is type bytearray. To avoid conflicts between OS used
+        codification, decode should be done in the caller. For example use:
+        vuart.sendCommand("ip").decode("utf-8")
 
         Args:
             cmd (str) : Command
+            buffered (bool) : Use for package multiple commands in a unique packet
 
         Returns:
-            A string with the device's response. A empty string is returned when
-            there isn't response from device.
+            A bytearray with the output of the command sent to the WR Device.
 
         Raises:
-            CmdNotValid : When the passed command is not accepted by the device.
-            ConsoleError : When an error was occured while reading/writing.
+
         '''
+        if self.verbose and cmd != "\r":
+            print("Sending command '%s'" % (cmd))
+        bytes = []
+
+        # Wait for ready bit
+        timeout_cnt = 0
+        ready = self.bus.read(self.VUART_OFFSET+self.VUART_TX_REG) & self.VUART_RDY_MSK
+        while not ready:
+            time.sleep(1)
+            timeout_cnt += 1
+            if timeout_cnt >= self.MAX_TIMEOUT:
+                raise Error()  # virtual uart is not ready
+
+        bytes = bytearray(cmd)
+        bytes.append(13) # insert \r
+        try:
+            for b in bytes:
+                self.bus.devwrite(None,offset=self.VUART_OFFSET+self.VUART_TX_REG, width=4, datum=b)
+                time.sleep(0.0008)
+            time.sleep(0.5)
+            rx_raw = self.bus.read(self.VUART_OFFSET+self.VUART_RX_REG)
+            if rx_raw & self.VUART_RDY_MSK:
+                cnt = (rx_raw & self.VUART_RX_CNT_MSK) >> 9
+                while cnt > 0:
+                    bytes.append(rx_raw&self.VUART_RX_DAT_MKS)
+                    rx_raw = self.bus.read(self.VUART_OFFSET+self.VUART_RX_REG)
+                    cnt -= 1
+
+            # The output from VUART contains the sent command twice, remove it
+            r_bytes = bytes.index('\n')+1
+            return bytes[r_bytes:-6]  # Remove the final "\r\nwrc#"
+        except BusWarning as e:
+            raise e
 
     @staticmethod
-    def scan(bus="all", subnet="192.168.7.0/24") :
+    def scan(bus="all", subnet="192.168.7.0/24"):
         '''
         Method to scan WR devices connected to the PC.
 
@@ -122,7 +240,7 @@ class VUART_bridge(ConsoleBridge) :
             {'pci':[], 'eth':["192.168.1.3"]}
 
         Raises:
-            ConsoleError : When one of the specified interfaces could not be scanned.
+            Error : When one of the specified interfaces could not be scanned.
         '''
 
         devices = {'eth':[], 'pci':[]}
@@ -143,53 +261,9 @@ class VUART_bridge(ConsoleBridge) :
                     devices['pci'].append(dev)
 
         elif bus == "eth" :
-            # If fping is installed, only check with eb-discover alive IPs
-            if not os.system("command -v fping > /dev/null") :   # FAST MODE
-                # Retrieve a list of alive devices in the subnet
-                cmd = """fping -C 1 -q -g %s 2>&1 | grep -v \": -\"""" % (subnet)
-                raw_alive_devs = check_output(cmd,shell=True).splitlines()
-                unknown_devices = [None, ] * len(raw_alive_devs)
-                i = 0
-                for dev in raw_alive_devs :
-                    unknown_devices[i] = dev.split(":")[0].rstrip(' ')
-                    i += 1
-                raw_alive_devs = None
-
-                # Now check which ones are WR devices using eb-discover
-                for udev in unknown_devices :
-                    args = "udp/%s" % (udev)
-                    ret = check_output(["eb-discover", args])
-                    if ret != '' : # is a WR device
-                        devices['eth'].append(udev)
-
-            else :                                               # SLOW MODE
-                # Scan to find WR devices in the network
-                ip, bcast = subnet.split("/")
-                end = int( (( math.ceil((32-int(bcast)) / 8.0) % 3) * 2) % 3 )
-                lip = ip.split(".")[:end+1]
-
-                buildNextSubnet = lambda root : root.append('0')
-                # Generate next ip
-                nextIP = lambda ip : ip.append( str( int(ip.pop())+1 ) ) if int(ip[-1]) < 255 else False
-                # Check wether a ip direction is complete
-                isLastByte = lambda ip : (len(ip) == 4) if (type(ip) == type(list())) else (len(ip.split(".")) == 4)
-
-                def checkDevices(ip,devices) :
-                    for i in range(1,255) :
-                        ip[-1] = str(i)
-                        print "probando ip: %s" % ('.'.join(ip))
-                        if isLastByte(ip) :
-                            args = "udp/%s" % (ip if type(ip) == type("") else '.'.join(ip))
-                            ret = check_output(["eb-discover", args])
-                            if ret != '' : # is a WR device
-                                devices['eth'].append('.'.join(ip))
-                            if int(ip[-1]) == 254 : return
-
-                        else :
-                            checkDevices( buildNextSubnet(ip) )
-
-
-                buildNextSubnet(lip)
-                checkDevices(lip,devices)
+            try :
+                devices['eth'] = EthBone.scan(subnet)
+            except BadData as e:
+                raise e
 
         return devices

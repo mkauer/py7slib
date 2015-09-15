@@ -107,7 +107,8 @@ class wb_UART(GenDrvr) :
             width : data size (1, 2, or 4 bytes)
         '''
         cmd = "wb read 0x%X\r" % (offset)
-        self.logger.dbg("\t %s" % (cmd))
+        if self.verbose :
+            print("\t %s" % (cmd))
         ntries = self.ntries
         read_ok = True
 

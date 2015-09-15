@@ -85,7 +85,7 @@ class ConsoleBridge() :
         '''
 
     @staticmethod
-    def scan(bus="all", subnet) :
+    def scan(bus, subnet) :
         '''
         Method to scan WR devices connected to the PC.
 
