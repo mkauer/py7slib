@@ -69,8 +69,6 @@ def main() :
 
         id_dict[rid].append(scbsn)
 
-    print id_dict
-
     # Checking
     for key in id_dict :
         first = id_dict[key][0]
@@ -85,10 +83,13 @@ def main() :
         for key,values in hoax.items():
             print("\tSerial Numbers:")
             sys.stdout.write("\t")
+            already_listed = []
             for i in values :
+                if i in already_listed: continue
                 sys.stdout.write("%s, " % (i))
+                already_listed.append(i)
             print("\n\t-> %s\n" % (key))
-            
+
     else :
         print("No coincidences founded.")
 
