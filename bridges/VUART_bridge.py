@@ -136,7 +136,7 @@ class VUART_bridge(ConsoleBridge):
             ConsoleError : When the connection fails closing.
         '''
         try:
-            bus.close()
+            self.bus.close()
         except BusCritical as e:
             raise Error(2, e.message)
 
@@ -155,7 +155,7 @@ class VUART_bridge(ConsoleBridge):
 
         self.sendCommand("\x1b\r", buffered=False)
 
-    def sendCommand(self, cmd, buffered=False):
+    def sendCommand(self, cmd):
         '''
         Method to pass a command to the Virtual UART module of a WR Device
 
@@ -172,7 +172,6 @@ class VUART_bridge(ConsoleBridge):
 
         Args:
             cmd (str) : Command
-            buffered (bool) : Use for package multiple commands in a unique packet
 
         Returns:
             A bytearray with the output of the command sent to the WR Device.
@@ -213,6 +212,36 @@ class VUART_bridge(ConsoleBridge):
             return bytes[r_bytes:-6]  # Remove the final "\r\nwrc#"
         except BusWarning as e:
             raise e
+
+
+    def devwrite(self, bar, offset, width, datum):
+        '''
+        Method to write a register through EtherBone bus
+
+        This method enables the use of this driver like it was a gendrvr child.
+
+        Args:
+            bar : BAR used by PCIe bus
+            offset : address within bar
+            width : data size (1, 2, or 4 bytes)
+            datum : data value that need to be written
+        '''
+        #TODO: put the following setences inside a try-except block
+        return self.bus.devwrite(bar, offset, width, datum)
+
+    def devread(self, bar, offset, width):
+        '''
+        Method read a register through EtherBone bus
+
+        This method enables the use of this driver like it was a gendrvr child.
+
+        Args:
+            bar : BAR used by PCIe bus (Not used)
+            offset : address within bar
+            width : data size (1, 2, or 4 bytes) => Must be 4 bytes
+        '''
+        #TODO: put the following setences inside a try-except block
+        return self.bus.devread(bar, offset, width)
 
     @staticmethod
     def scan(bus="all", subnet="192.168.7.0/24"):
