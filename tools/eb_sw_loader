@@ -24,7 +24,7 @@ sys.path.append('../../')
 
 from py7slib.bridges.ethbone import *
 #from pts_core.bridges.wb_uart import *
-from pts_core.periph.ipc_spiflash import *
+from py7slib.periph.ipc_spiflash import *
 from py7slib.bridges.sdb import SDBNode
 
 def main():

@@ -29,14 +29,18 @@ from optparse import OptionParser
 sys.path.append('../../')
 
 from py7slib.bridges.ethbone import *
-from pts_core.periph.ipc_spiflash import *
+from py7slib.periph.ipc_spiflash import *
 from py7slib.bridges.sdb import SDBNode
 
 def main():
     # Vendor ID for CERN
     VENDOR_ID_CERN = 0xce42
+    # Vendor ID for SevenSolutions
+    VENDOR_ID_7SOLS = 0x7501
     # WR-Mini-NIC
     WR_MININIC_RAM = 0x66cfeb52
+    # WR-SPI-Flash-Update Core
+    WR_SPI_FLASH = 0xae5f
 
     use = "Usage: %prog [--bus=uart --lun=0 --debug -file=mcsfile] "
     parser = OptionParser(usage=use, version="spiflash update v1.0")
@@ -66,10 +70,17 @@ def main():
     sdb.base = sdb.scan()
     sdb.parse()
     blockrams = sdb.findProduct(VENDOR_ID_CERN, WR_MININIC_RAM)
+
     # Look for the Block RAM of the MINIC 1
     ram_base = 0
     for ram in blockrams:
         if ram[1] > ram_base: ram_base = ram[1]
+
+    #TODO: Fix sdb.findProduct
+    spi = sdb.findProduct(VENDOR_ID_7SOLS, WR_SPI_FLASH)
+    spi_base = 0
+    for s in spi:
+        if s[1] > spi_base: spi_base = s[1]
 
     if options.mode=="test":
         ##Check Endpoint Register
@@ -80,7 +91,7 @@ def main():
         return 0
 
     # This address must be changed if the layout changes.
-    flash=SpiFlash(bus,sdb.base,options.debug)
+    flash=SpiFlash(bus,spi_base,options.debug)
 
     flash.flash_update(options.mode,options.file)
 
