@@ -29,14 +29,14 @@ from optparse import OptionParser
 sys.path.append('../../')
 
 from py7slib.bridges.ethbone import *
-#from bridges.wb_uart import *
-from main.ptsexcept import *
-from main.ptslogger import PTSLogger
-from py7slib.tools import KeyInput
 from pts_core.periph.ipc_spiflash import *
-
+from py7slib.bridges.sdb import SDBNode
 
 def main():
+    # Vendor ID for CERN
+    VENDOR_ID_CERN = 0xce42
+    # WR-Mini-NIC
+    WR_MININIC_RAM = 0x66cfeb52
 
     use = "Usage: %prog [--bus=uart --lun=0 --debug -file=mcsfile] "
     parser = OptionParser(usage=use, version="spiflash update v1.0")
@@ -62,18 +62,25 @@ def main():
         print "Fatal: %s" % (e)
         return 1
 
-    #TODO: Check SDB to get the base address of the cores
+    sdb = SDBNode(bus, None)
+    sdb.base = sdb.scan()
+    sdb.parse()
+    blockrams = sdb.findProduct(VENDOR_ID_CERN, WR_MININIC_RAM)
+    # Look for the Block RAM of the MINIC 1
+    ram_base = 0
+    for ram in blockrams:
+        if ram[1] > ram_base: ram_base = ram[1]
 
     if options.mode=="test":
         ##Check Endpoint Register
         bus.test_rw()
 
         ##Check block read/write using MiniNIC RAM.
-        bus.test_rwblock(0x20000)
+        bus.test_rwblock(ram_base)
         return 0
 
     # This address must be changed if the layout changes.
-    flash=SpiFlash(bus,0x40000,options.debug)
+    flash=SpiFlash(bus,sdb.base,options.debug)
 
     flash.flash_update(options.mode,options.file)
 
