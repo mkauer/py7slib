@@ -22,26 +22,22 @@ import argparse as arg
 
 sys.path.append('../../')
 
-from pts_core.bridges.ethbone import *
+from py7slib.bridges.ethbone import *
 #from pts_core.bridges.wb_uart import *
-from pts_core.main.ptsexcept import *
-from pts_core.main.ptslogger import PTSLogger
-from pts_core.main.tools import KeyInput
 from pts_core.periph.ipc_spiflash import *
-
+from py7slib.bridges.sdb import SDBNode
 
 def main():
     '''
     Script for loading the LM32's Software in the WR-LEN
     '''
-    
+
     parser = arg.ArgumentParser(description='WR-LEN Software Loader v1.0')
 
     parser.add_argument('--bus','-b',help='communication bus', choices=['EB','UART'],\
     required=True)
     parser.add_argument('--lun','-l',help='Logical unit Number (SerialPort / IP)',\
     type=str, required=True)
-    parser.add_argument('--address', '-a', help="SDB Bus address (Hex format)",required=True)
     parser.add_argument('--file','-f',help="RAM file",required=True)
     parser.add_argument('--debug','-d',help="Enable debug output",action='store_true')
 
@@ -55,9 +51,12 @@ def main():
             #bus.open(options.lun)
     except BusException, e:
         print "Fatal: %s" % (e)
-    ##TODO: add sdb to detect where we should load on any bus.
 
-    flash=SpiFlash(bus,int(args.address,16),args.debug)
+    sdb = SDBNode(bus, None)
+    sdb.base = sdb.scan()
+
+
+    flash=SpiFlash(bus, sdb.base, args.debug)
     flash.eb_sw_loader(args.file)
 
 
