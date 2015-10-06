@@ -361,7 +361,7 @@ class SDBNode():
                 ##TODO: when bus error are well handle we can skip out of place
         return self.scan(mask >> 4)
 
-    def findProduct(self,vendor_id,device_id, prods=[]):
+    def findProduct(self,vendor_id,device_id, prods=None):
         """
         Find SDB product according to vendor/device ID
 
@@ -376,6 +376,8 @@ class SDBNode():
             A list of all the device found that match the vendor/device ID
             We return a tupple with the (sdb structure,full_wb_address)
         """
+        if prods is None: prods = []
+        
         for i in range(0,len(self.elements)):
             if self.elements[i][0].is_component():
                 e=self.elements[i][0].getTypedRecord()
