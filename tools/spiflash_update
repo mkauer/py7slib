@@ -57,7 +57,7 @@ def main():
     ## Opening Bus connection
     try:
         if options.bus_type.lower() == "eb":
-            bus = EthBone(options.lun,(options.mode=="test"))
+            bus = EthBone("udp/"+options.lun,(options.mode=="test"))
             bus.silent=options.silent
         #else: ##options.bus_type == "UART"
            # bus = wb_UART()
@@ -70,17 +70,12 @@ def main():
     sdb.base = sdb.scan()
     sdb.parse()
     blockrams = sdb.findProduct(VENDOR_ID_CERN, WR_MININIC_RAM)
+    spi_base = sdb.findProduct(VENDOR_ID_7SOLS, WR_SPI_FLASH)[0][1]
 
     # Look for the Block RAM of the MINIC 1
     ram_base = 0
     for ram in blockrams:
         if ram[1] > ram_base: ram_base = ram[1]
-
-    #TODO: Fix sdb.findProduct
-    spi = sdb.findProduct(VENDOR_ID_7SOLS, WR_SPI_FLASH)
-    spi_base = 0
-    for s in spi:
-        if s[1] > spi_base: spi_base = s[1]
 
     if options.mode=="test":
         ##Check Endpoint Register

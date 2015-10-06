@@ -45,18 +45,15 @@ def main():
     ## Opening Bus connection
     try:
         if args.bus.lower() == "eb":
-            bus = EthBone(args.lun,args.debug)
+            bus = EthBone("udp/"+args.lun,args.debug)
         #else: ##options.bus_type == "UART"
            # bus = wb_UART()
             #bus.open(options.lun)
     except BusException, e:
         print "Fatal: %s" % (e)
 
-    sdb = SDBNode(bus, None)
-    sdb.base = sdb.scan()
 
-
-    flash=SpiFlash(bus, sdb.base, args.debug)
+    flash=SpiFlash(bus, None, args.debug)
     flash.eb_sw_loader(args.file)
 
 
