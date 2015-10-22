@@ -50,7 +50,7 @@ class DevMem(GenDrvr):
         bar : Bar is the offset that need to be used by devmem
     '''
 
-    def __init__(self, bar):
+    def __init__(self, bar, verbose=False):
         '''
         Constructor
 
@@ -58,16 +58,20 @@ class DevMem(GenDrvr):
             bar : he offset that need to be used by devmem
         '''
         self.bar=bar
+        self.verbose = verbose
 
     def open(self, LUN):
         '''Do nothing
         '''
-        print "opened"
+        if self.verbose:
+            print "opened"
+
 
     def close(self):
         '''Do nothing
         '''
-        print "closed"
+        if self.verbose:
+            print "closed"
 
     def devread(self, bar, offset, width):
         '''Method that do a read on the devices using /dev/mem device
@@ -78,7 +82,8 @@ class DevMem(GenDrvr):
             width : data size (1, 2, or 4 bytes)
         '''
         ret=subprocess.check_output(["devmem","0x%08X" %(bar+offset), "%d" %(width*8)]).rstrip()
-        print "%s (devmem 0x%08X)" % (ret, bar+offset)
+        if self.verbose:
+            print "%s (devmem 0x%08X)" % (ret, bar+offset)
         return c_uint(int(ret,0)).value;
 
 
@@ -94,7 +99,8 @@ class DevMem(GenDrvr):
         data = c_uint(datum)
         #print "0x%x => 0x%x" % (datum, data.value)
         cmd="devmem 0x%08X %d 0x%08x" %(bar+offset, width*8,data.value)
-        print cmd
+        if self.verbose:
+            print cmd
         ret=os.system(cmd)
         if ret !=0:
             raise BusException("Bad return while Writing @ 0x%x \n(%s)" %(bar+offset,cmd))
