@@ -27,7 +27,7 @@ Script to write the SFP calibration values to a WR Device (using WRCORE commands
 # download it from http://www.gnu.org/licenses/lgpl-2.1.html                   |
 #------------------------------------------------------------------------------|
 import argparse as arg
-import urllib2
+from ConfigParser import SafeConfigParser
 import time
 import sys
 
@@ -54,8 +54,7 @@ def main():
     parser.add_argument('--bus','-b',help='Bus',choices=['ethbone','serial'], \
     required=True)
     parser.add_argument('--lun','-l',help='Logical Unit (IP/Serial Port)',type=str,required=True)
-    parser.add_argument('--url','-u',help='Url with the calibration parameters')
-    parser.add_argument('--init','-i',help='Init script file')
+    parser.add_argument('--input','-i',help='Input .ini file', type=str, required=True)
     parser.add_argument('--debug','-d',help='Enable debug output',action="store_true", \
     default=False)
     args = parser.parse_args()
@@ -66,45 +65,36 @@ def main():
         uart = Serial_bridge(port="/dev/ttyUSB%s" % args.lun, verbose=args.debug)
     uart.open()
 
-    if args.url:
-        attemps = 0
-        print("Fetching data for delays...")
-        try:
-            response = urllib2.urlopen(args.url, timeout=5)
-            content = response.read()
-            if len(content.splitlines())-1 != 4:
-                print("Retrieved SFP DB csv is not well formed. Skipping SFP DB writing.")
-            else:
-                lines = content.splitlines()
-                for i in range(1, 5):
-                    line = lines[i].split(',')
-                    sfp_db[line[0]] = line[1:]
+    parser = SafeConfigParser()
+    ret = parser.read(args.input)
+    if ret == []:
+        print("%s could not be opened" % (args.input))
 
-                print("Writing SFP data to the WR Device...")
+    # Write the delays for the SFP ports
+    if "ports" in parser.sections():
+        print("Writing the port calibration values...")
+        uart.sendCommand("sfp erase")
+        time.sleep(0.5)  # For serial
 
-                uart.sendCommand("sfp erase")
-                for key in sfp_db:
-                    cur_sfp = SFP_BLUE if "blue" in key else SFP_VIOLET
-                    cmd = "%s %s %s %s %s" % (cur_sfp, key[:3], sfp_db[key][2], \
-                    sfp_db[key][1], sfp_db[key][0])
-                    uart.sendCommand(cmd)
-                    time.sleep(0.5)  # For serial
+        # Every readen port is a combination of (SFP-SN@PORT,(tx,rx,alpha))
+        for port in parser.items("ports"):
+            sfpsn, p = port[0].split('@')
+            sfpsn = sfpsn.upper()  # The parser reads the chars in lowercase
+            dtx, drx, alpha = port[1].split(',')
 
-        except urllib2.URLError as e:
-            attemps += 1
-            if attemps >= 4:
-                print("Could not retrieve data from the given url. SFP DB is not going to be writed.")
-            print("Error retrieving data from url: %s, retrying..." % (e.message))
+            cmd = "sfp add %s %s %s %s %s" % (sfpsn, p, dtx, drx, alpha)
+            uart.sendCommand(cmd)
+            time.sleep(0.5)  # For serial
 
-    if args.init:
+    # Write the init script
+    if "init" in parser.sections():
         print("Writing init script...")
         uart.sendCommand("init erase")
-        with open(args.init) as file:
-            for line in file.readlines():
-                uart.sendCommand("init add %s" % line[:-1])  # Remove the \n
+        for item in parser.items("init"):
+            time.sleep(0.5)  # For serial
+            uart.sendCommand("init add %s" % item[1])
 
-    print("All the configuration is writed to the device.")
-
+    print("Configuration writed")
 
 if __name__ == '__main__':
     main()

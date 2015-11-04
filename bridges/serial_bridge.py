@@ -93,7 +93,7 @@ class Serial_bridge(ConsoleBridge):
 
 
 
-    def open(self, ethbone_dbg=False, baudrate=115200, rdtimeout=0.1, wrtimeout=0.1, interchartimeout=0.0005, ntries=2):
+    def open(self, ethbone_dbg=False, baudrate=115200, rdtimeout=0.1, wrtimeout=0.1, interchartimeout=0.005, ntries=2):
 
         '''
         Method to open a new connection with a WR device.
