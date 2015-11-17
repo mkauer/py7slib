@@ -153,7 +153,7 @@ class VUART_bridge(ConsoleBridge):
         if self.verbose:
             print("Erasing old content of rx buffer in the VUART")
 
-        self.sendCommand("\x1b\r", buffered=False)
+        self.sendCommand("\x1b\r")
 
     def sendCommand(self, cmd):
         '''
