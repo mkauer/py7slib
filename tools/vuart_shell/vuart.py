@@ -55,3 +55,13 @@ class VUART_shell():
         '''
         Open the interactive shell
         '''
+        print("TEST: running interactive mode")
+
+    def run_script(self, script):
+        '''
+        Execute a bunch of WRPC commands.
+
+        Args:
+            script (file) : An instance of an opened file
+        '''
+        print("TEST: running script mode")

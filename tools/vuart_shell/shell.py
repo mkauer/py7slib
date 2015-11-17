@@ -28,10 +28,11 @@ Tool for opening an interactive shell through virtual UART.
 # Imports
 import argparse as arg
 import sys
+import socket
 
-sys.path.append('../../')
+sys.path.append('../../../')
 
-from py7slib.tools.vuart-shell.vuart import *
+from vuart import *
 
 def main():
     '''
@@ -40,8 +41,28 @@ def main():
 
     parser = arg.ArgumentParser(description='VUART shell for WR-LEN')
 
-    parser.add_argument('ip', metavar='IP', type=str, nargs='1', help='IP of the device')
-    parser.add_argument('--input','-i',help='Execute an input script of WRPC commands', \
-    required=True)
+    parser.add_argument('IP', type=str, help='IP of the device')
+    parser.add_argument('--input','-i',help='Execute an input script of WRPC commands')
 
     args = parser.parse_args()
+
+    try:
+        socket.inet_aton(args.IP)
+    except socket.error as ip_error:
+        print("Illegal IP address passed (%s)\n" % args.IP)
+        exit(1)
+
+    try:
+        shell = VUART_shell(args.IP)
+        if args.input:
+            with open(args.input, 'r') as file:
+                shell.run_script(file)
+        else:
+            shell.run()
+    #TODO: use exceptions from vuart (not defined yet)
+    except Exception as e:
+        print e
+
+
+if __name__ == '__main__':
+    main()
