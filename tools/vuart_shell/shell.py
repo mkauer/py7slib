@@ -43,6 +43,7 @@ def main():
 
     parser.add_argument('IP', type=str, help='IP of the device')
     parser.add_argument('--input','-i',help='Execute an input script of WRPC commands')
+    parser.add_argument('--output','-o',help='Save the output of an input script to a file')
 
     args = parser.parse_args()
 
@@ -55,13 +56,16 @@ def main():
     try:
         shell = VUART_shell(args.IP)
         if args.input:
-            with open(args.input, 'r') as file:
-                shell.run_script(file)
+            fin = open(args.input, 'r')
+            fout = open(args.output,'a+') if args.output else None
+                shell.run_script(fin, fout)
         else:
             shell.run()
     #TODO: use exceptions from vuart (not defined yet)
     except Exception as e:
         print e
+        sys.stdout.write ("\033[1;31mError\033[0m: Failed connection with the WR-LEN (%s)\n" % (args.IP))
+        print ("See the manual for more deatils")
 
 
 if __name__ == '__main__':
