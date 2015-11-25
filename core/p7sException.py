@@ -26,6 +26,10 @@ Custom exceptions
 # download it from http://www.gnu.org/licenses/lgpl-2.1.html                   |
 #------------------------------------------------------------------------------|
 
+
+import ewberrno as errno
+
+
 class p7sException(Exception) :
     # definir los códigos de error
     def __init__(self, errcode, msg) :
@@ -34,28 +38,38 @@ class p7sException(Exception) :
 
         Formats output string
         '''
-        self.errmsg = "%s%s" % (self.messages[errcode], msg)
+        self.err = errno.Ewberrno()
         self.errcode = errcode
+        self.errmsg = msg
+        
+        
+    def __str__(self):
+
+        if self.errmsg != '':
+            errstr = "Error code: " + str(self.errcode) + ": " + "%s (%s)" % (self.err.errdict[self.errcode], self.errmsg)
+        else:
+            errstr = "Error code: " + str(self.errcode) + ": " + "%s" % (self.err.errdict[self.errcode])
+        return errstr
 
 class Retry(p7sException) :
     '''
     This exception indicates to caller that the operation failed and it should be retried.
     '''
-    BADINTERFACE = (1,"Wrong interface selected. List of available interfaces: ")
+    #BADINTERFACE = (1,"Wrong interface selected. List of available interfaces: ")
 
 class BadData(p7sException) :
     '''
     Exception used to indicate that any of the passed parameters are invalid.
     '''
-    messages = {}
+    '''messages = {}
     messages[1] = "No valid interface selected. Valid interfaces are : "
     messages[2] = "No valid IP : "
-    messages[3] = "No valid PCI port : "
+    messages[3] = "No valid PCI port : "'''
 
 class Error(p7sException) :
     '''
     Exception used for critical errors that should stop the execution of the caller.
     '''
-    messages = {}
+    '''messages = {}
     messages[1] = "Not availabe: "
-    messages[2] = "Error closing driver : "
+    messages[2] = "Error closing driver : "'''
