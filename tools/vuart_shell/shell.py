@@ -58,7 +58,7 @@ def main():
         if args.input:
             fin = open(args.input, 'r')
             fout = open(args.output,'a+') if args.output else None
-                shell.run_script(fin, fout)
+            shell.run_script(fin, fout)
         else:
             shell.run()
     #TODO: use exceptions from vuart (not defined yet)
