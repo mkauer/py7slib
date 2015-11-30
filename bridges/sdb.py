@@ -37,7 +37,7 @@ import os
 from ctypes import *
 import ctypes
 from py7slib.core.gendrvr import *
-from py7slib.core.tools import BitManip
+# from py7slib.core.tools import BitManip
 
 # Define specific for SDB Flags
 SDB_MAGIC                   = 0x5344422d
@@ -377,7 +377,7 @@ class SDBNode():
             We return a tupple with the (sdb structure,full_wb_address)
         """
         if prods is None: prods = []
-        
+
         for i in range(0,len(self.elements)):
             if self.elements[i][0].is_component():
                 e=self.elements[i][0].getTypedRecord()

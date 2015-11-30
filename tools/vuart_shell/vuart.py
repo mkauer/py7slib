@@ -156,15 +156,16 @@ class VUART_shell():
         '''
         attempts = 0
 
-        try:
-            ret = self.vuart.sendCommand(cmd)
-            return ret
-        except BusWarning as e:
-            if attempts >= retry:
-                raise Error(Ewberrno.EIO , "Too many errors executing the command %s" % cmd)
-            else:
-                print "safe command retrying"
-                attempts += 1
+        while True:
+            try:
+                ret = self.vuart.sendCommand(cmd)
+                return ret
+            except BusWarning as e:
+                if attempts >= retry:
+                    raise Error(Ewberrno.EIO , "Too many errors executing the command %s" % cmd)
+                else:
+                    attempts += 1
+                if attempts == 1: print ("The connection seems to be lost. Retrying...")
 
     def __get_firm_date__(self, raw_ver):
         '''
@@ -348,7 +349,7 @@ class VUART_shell():
                 except Error as e:
                     sys.stdout.write("\033[1;31mError:\033[0mConnection with the WR-LEN is lost\n")
                     print ("See the manual for more deatils")
-                    return
+                    exit(1)
                 if ret == "" : continue
                 else: print ret
 
@@ -376,7 +377,12 @@ class VUART_shell():
                 print ("Not allowed command %s" % (line))
                 continue
             # ret = self.vuart.sendCommand(line)
-            ret = self.__secure_sendCommand__(line[:-1]) # Don't forget: read lines from file end in '\n'
+            try:
+                ret = self.__secure_sendCommand__(line[:-1]) # Don't forget: read lines from file end in '\n'
+            except Error as e:
+                sys.stdout.write("\033[1;31mError:\033[0mConnection with the WR-LEN is lost\n")
+                print ("See the manual for more deatils")
+                return
 
             if saveto is not None:
                 saveto.write("@%s\n" % line[:-1])
