@@ -66,6 +66,8 @@ def main():
         print e
         sys.stdout.write ("\033[1;31mError\033[0m: Failed connection with the WR-LEN (%s)\n" % (args.IP))
         print ("See the manual for more deatils")
+    except Error as e:
+        print e
 
 
 if __name__ == '__main__':
