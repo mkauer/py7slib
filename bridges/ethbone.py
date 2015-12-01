@@ -75,6 +75,7 @@ import sys
 from ctypes import *
 import time
 import struct
+import platform
 
 
 # Import common modules
@@ -132,7 +133,20 @@ class EthBone(GenDrvr):
         '''
 
         if verbose: print "LD_LIBRARY_PATH=%s" % (os.getenv('LD_LIBRARY_PATH'))
-        self.load_lib("libetherbone.so")
+        #self.load_lib("libetherbone.so")
+        
+        libetherbone32 = "../../lib/precompiled/libetherbone32b.so"
+        libetherbone64 = "../../lib/precompiled/libetherbone64b.so"
+        version = '64'
+        if 'i686' in platform.machine():
+            version = '32'
+
+        if version == '32' and os.path.exists(libetherbone32):
+            self.load_lib(libetherbone32)
+        elif version == '64' and os.path.exists(libetherbone64):
+            self.load_lib(libetherbone64)
+        else:
+            self.load_lib("libetherbone.so")
 
         ##Create empty ptr on structure used by ethbone
         self.socket    = c_uint(0)
