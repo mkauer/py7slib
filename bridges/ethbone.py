@@ -79,7 +79,7 @@ import platform
 
 
 # Import common modules
-from py7slib.core.gendrvr import *
+from core.gendrvr import *
 from subprocess import check_output
 import binascii
 
@@ -133,17 +133,16 @@ class EthBone(GenDrvr):
         '''
 
         if verbose: print "LD_LIBRARY_PATH=%s" % (os.getenv('LD_LIBRARY_PATH'))
-        #self.load_lib("libetherbone.so")
         
-        libetherbone32 = "../../lib/precompiled/libetherbone32b.so"
-        libetherbone64 = "../../lib/precompiled/libetherbone64b.so"
+        libetherbone32 = "lib/precompiled/libetherbone32.so"
+        libetherbone64 = "lib/precompiled/libetherbone64.so"
         version = '64'
         if 'i686' in platform.machine():
             version = '32'
 
         if version == '32' and os.path.exists(libetherbone32):
             self.load_lib(libetherbone32)
-        elif version == '64' and os.path.exists(libetherbone64):
+        elif version == '64'and os.path.exists(libetherbone64):
             self.load_lib(libetherbone64)
         else:
             self.load_lib("libetherbone.so")

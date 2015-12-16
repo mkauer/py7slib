@@ -28,9 +28,9 @@ The serial_windows class allows to connect with WR devices over serial port in W
 #-------------------------------------------------------------------------------
 #                                   Import                                    --
 #-------------------------------------------------------------------------------
-from py7slib.core.p7sException import *
-from py7slib.core.serial_str_cleaner import *
-from py7slib.core.gendrvr import *
+from core.p7sException import *
+from core.serial_str_cleaner import *
+from core.gendrvr import *
 import subprocess
 import os
 import serial

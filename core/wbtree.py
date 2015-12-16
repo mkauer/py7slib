@@ -29,7 +29,7 @@ The class in this files are designed to ease the process to Read/Write to the el
 # Import system modules
 
 # Import custom modules
-from py7slib.core.p7sException import *
+from core.p7sException import *
 
 
 class WBOperator(object):

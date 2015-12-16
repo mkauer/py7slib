@@ -32,11 +32,11 @@ import sys
 import serial
 
 #from subprocess import check_output
-from py7slib.bridges.consolebridge import ConsoleBridge
+from bridges.consolebridge import ConsoleBridge
 #from bridges.ethbone import EthBone
-from py7slib.bridges.serial_linux import *
-from py7slib.bridges.serial_windows import *
-from py7slib.core.p7sException import *
+from bridges.serial_linux import *
+from bridges.serial_windows import *
+from core.p7sException import *
 #from bridges.sdb import SDBNode
 #from core.gendrvr import BusCritical, BusWarning
 

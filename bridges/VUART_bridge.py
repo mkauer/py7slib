@@ -30,11 +30,11 @@ import re
 import time
 
 from subprocess import check_output
-from py7slib.bridges.consolebridge import ConsoleBridge
-from py7slib.bridges.ethbone import EthBone
-from py7slib.core.p7sException import *
-from py7slib.bridges.sdb import SDBNode
-from py7slib.core.gendrvr import BusCritical, BusWarning
+from bridges.consolebridge import ConsoleBridge
+from bridges.ethbone import EthBone
+from core.p7sException import *
+from bridges.sdb import SDBNode
+from core.gendrvr import BusCritical, BusWarning
 
 class VUART_bridge(ConsoleBridge):
     '''

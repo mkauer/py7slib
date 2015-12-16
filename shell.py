@@ -32,7 +32,7 @@ import socket
 
 sys.path.append('../../../')
 
-from vuart import *
+from core.vuart import *
 
 def main():
     '''

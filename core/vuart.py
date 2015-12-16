@@ -31,10 +31,10 @@ import sys
 import time
 import select
 import datetime as dt
-from py7slib.bridges.VUART_bridge import *
-from py7slib.core.gendrvr import BusCritical, BusWarning
-from py7slib.core.p7sException import p7sException, Retry, Error
-from py7slib.core.ewberrno import *
+from bridges.VUART_bridge import *
+from core.gendrvr import BusCritical, BusWarning
+from core.p7sException import p7sException, Retry, Error
+from core.ewberrno import *
 
 class VUART_shell():
     '''
