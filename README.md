@@ -29,6 +29,5 @@ display white space and indentation.
 * Add a standardized file header with author, date, title information in it. Current
 documentation style is Google Style Python Docstrings.
 
-To get more detailed information visit the repository's [wiki][wiki] page.
-
-[wiki]: https://bitbucket.org/sevensols/py7slib/wiki/Home
+To get more detailed information about the tools included in this repository or 
+the drivers etc. please go to the *doc* folders included.
