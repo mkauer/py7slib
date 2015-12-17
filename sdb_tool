@@ -22,12 +22,12 @@ import argparse as arg
 
 sys.path.append('../../')
 
-from pts_core.bridges.ethbone import *
-from pts_core.bridges.wb_uart import *
-from pts_core.bridges.sdb import *
-from pts_core.main.ptsexcept import *
-from pts_core.main.ptslogger import PTSLogger
-from pts_core.main.tools import KeyInput
+from bridges.ethbone import *
+from bridges.wb_uart import *
+from bridges.sdb import *
+from core.ptsexcept import *
+from core.ptslogger import PTSLogger
+from core.tools import KeyInput
 
 def auto_int(x):
     """ Convert hexadecimal to int """
@@ -47,7 +47,7 @@ def main():
 
 
     args = parser.parse_args()
-    
+
     ## Opening Bus connection
     try:
         if args.bus.lower() == "eb":
@@ -67,7 +67,7 @@ def main():
     sdbroot=SDBNode(bus,args.address)
     sdbroot.debug=args.debug
     sdbroot.parse()
-    
+
     if args.find==None:
         sdbroot.ls(args.verbose)
     else:
@@ -75,10 +75,9 @@ def main():
         prods=sdbroot.findProduct(long(ids[0],0),int(ids[1],0))
         for p in prods:
             SDBNode.ls_oneline(p[0],p[1],p[2])
-        
-    
+
+
     print ""
 
 if __name__ == '__main__':
     main()
-

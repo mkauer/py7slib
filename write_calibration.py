@@ -33,8 +33,8 @@ import sys
 
 sys.path.append('../../')
 
-from py7slib.bridges.VUART_bridge import *
-from py7slib.bridges.serial_bridge import *
+from bridges.VUART_bridge import *
+from bridges.serial_bridge import *
 
 def main():
     '''
