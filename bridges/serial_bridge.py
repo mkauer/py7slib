@@ -27,20 +27,18 @@ The serial_bridge class allows to connect with WR devices over serial port.
 
 # Imports
 import re
-#import time
 import sys
 import serial
+import cmd
+from wx import OutBottom
 
-#from subprocess import check_output
-from py7slib.bridges.consolebridge import ConsoleBridge
-#from bridges.ethbone import EthBone
-from py7slib.bridges.serial_linux import *
-from py7slib.bridges.serial_windows import *
+from consolebridge import *
+from serial_linux import *
+from serial_windows import *
 from py7slib.core.p7sException import *
-#from bridges.sdb import SDBNode
-#from core.gendrvr import BusCritical, BusWarning
+from py7slib.core.gendrvr import BusCritical, BusWarning
 
-class Serial_bridge(ConsoleBridge):
+class SerialBridge(ConsoleBridge):
     '''
     Class to handle connection with WR devices through the USB port (serial).
 
@@ -78,22 +76,24 @@ class Serial_bridge(ConsoleBridge):
         '''
         # Input control
         if interface != "serial":
-            raise BadInput(1, "serial")
+            raise BadData(1, "serial")
         elif 'linux2' in self.os and not re.match("^/dev/ttyUSB[0-9]{1,4}$",str(port)): #if port is not a valid port name in Linux
         #elif 'linux2' in self.os and re.match('/dev/ttyUSB',str(port)) == None: #if port is not a valid port name in Linux
-            raise BadInput(4, port)
+            raise BadData(4, port)
         elif not ('linux2' in self.os) and re.match("^COM[0-9]{1,4}$",str(port)) == None: #if port is not a valid port name in Windows
         #elif not ('linux2' in self.os) and re.match('COM',str(port)) == None: #if port is not a valid port name in Windows
-            raise BadInput(5, port)
+            raise BadData(5, port)
 
         self.interface = interface
         self.port = port
         self.bus = None
         self.verbose = verbose
+        if self.isOpen() == False:
+            self.open()
 
 
 
-    def open(self, ethbone_dbg=False, baudrate=115200, rdtimeout=0.1, wrtimeout=0.1, interchartimeout=0.005, ntries=2):
+    def open(self, ethbone_dbg=False, baudrate=115200, rdtimeout=0.2, wrtimeout=0.2, interchartimeout=0.001, ntries=2):
 
         '''
         Method to open a new connection with a WR device.
@@ -116,10 +116,10 @@ class Serial_bridge(ConsoleBridge):
         self.ntries = ntries
 
         if 'linux2' in self.os: #if we are in Linux it call to the linux serial bridge
-            self.bus = Serial_linux(verbose=self.verbose, baudrate=self.baudrate, rdtimeout=self.rdtimeout, wrtimeout=self.wrtimeout, interchartimeout=self.interchartimeout, ntries=self.ntries)
+            self.bus = SerialLinux(verbose=self.verbose, baudrate=self.baudrate, rdtimeout=self.rdtimeout, wrtimeout=self.wrtimeout, interchartimeout=self.interchartimeout, ntries=self.ntries)
             self.bus.open(self.port)
         else:#if we are in Windows it call to the windows serial bridge
-            self.bus = Serial_windows(verbose=self.verbose, baudrate=self.baudrate, rdtimeout=self.rdtimeout, wrtimeout=self.wrtimeout, interchartimeout=self.interchartimeout, ntries=self.ntries)
+            self.bus = SerialWindows(verbose=self.verbose, baudrate=self.baudrate, rdtimeout=self.rdtimeout, wrtimeout=self.wrtimeout, interchartimeout=self.interchartimeout, ntries=self.ntries)
             self.bus.open(self.port)
 
 
@@ -172,14 +172,13 @@ class Serial_bridge(ConsoleBridge):
             Outputs a list of str from WR-LEN.
         '''
         out = self.bus.cmd_w(cmd, buffered)
-        #print out
         return out
 
 
 
 
     @staticmethod
-    def scan(bus="all", subnet="50"):
+    def scan(bus="all", nports="50"):
         '''
         Method to scan WR devices connected to the PC through serial interface.
 
@@ -198,7 +197,7 @@ class Serial_bridge(ConsoleBridge):
         '''
 
         devices = []
-        num_ports = int(subnet)
+        num_ports = int(nports)
 
         if sys.platform == 'linux2' :
             port_name = '/dev/ttyUSB'
@@ -227,3 +226,4 @@ class Serial_bridge(ConsoleBridge):
                 pass
 
         return devices
+

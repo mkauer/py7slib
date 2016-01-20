@@ -30,7 +30,17 @@ The serial_windows class allows to connect with WR devices over serial port in W
 #-------------------------------------------------------------------------------
 from py7slib.core.p7sException import *
 from py7slib.core.serial_str_cleaner import *
-from py7slib.core.gendrvr import *
+from py7slib.bridges.consolebridge import ConsoleBridge
+#from py7slib.core.gendrvr import *
+from py7slib.bridges.serial_bridge import *
+from py7slib.core.ewberrno import *
+
+#from py7slib.core.p7sException import *
+#from py7slib.core.serial_str_cleaner import *
+#from py7slib.core.gendrvr import *
+#from py7slib.bridges.serial_bridge import *
+#from py7slib.core.ewberrno import import *
+
 import subprocess
 import os
 import serial
@@ -38,7 +48,8 @@ import time
 import string
 
 
-class Serial_windows(GenDrvr) :
+
+class SerialWindows(ConsoleBridge) :
     '''
     Class that simplifies serial communication for use with WR LEN PTS in Linux.
 
@@ -57,7 +68,7 @@ class Serial_windows(GenDrvr) :
             verbose (bool) : Activates the verbose output
 
         '''
-        self.PORT = "ddd"
+        self.PORT = ""
         self.BAUDRATE = baudrate
         self.WRTIMEOUT = wrtimeout
         self.INTERCHARTIMEOUT = interchartimeout
@@ -65,6 +76,7 @@ class Serial_windows(GenDrvr) :
         self._serial = None
         self.ntries = ntries
         self.verbose = verbose
+        self.errno = Ewberrno()
 
     def open(self, LUN=0) :
         '''
@@ -86,11 +98,10 @@ class Serial_windows(GenDrvr) :
                 print ("Port %s succesfully opened " % (self.PORT))
         except ValueError as e:
             msg = "Error opening serial port %s" % (self.PORT)
-            raise Error(errno.EBADIP, msg)
+            raise Error(self.errno.EBADIP, msg)
         except serial.SerialException as e:
             msg = "%s port could not be opened" % (self.PORT)
-            raise Error(errno.ENXIO, msg)
-            #raise Error(123, msg)
+            raise Error(self.errno.ENXIO, msg)
 
     def close(self) :
         '''
@@ -294,6 +305,10 @@ class Serial_windows(GenDrvr) :
                 # a high number of bytes (more than really would be) so you ensure
                 # that always you are reading all data returned by WR-LEN.
                 # Reading must be seted to blocking with timeout.
+                if 'sfp add' in cmd:
+                    time.sleep(0.5)
+                else:
+                    time.sleep(0.2)
                 ret += self._serial.read(1000)
                 ret = ret[:-6] # Remove prompt from returned string
 
