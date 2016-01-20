@@ -28,16 +28,18 @@ The serial_linux class allows to connect with WR devices over serial port in Lin
 #-------------------------------------------------------------------------------
 #                                   Import                                    --
 #-------------------------------------------------------------------------------
-from core.p7sException import *
-from core.serial_str_cleaner import *
-from core.gendrvr import *
+from py7slib.core.p7sException import *
+from py7slib.core.serial_str_cleaner import *
+from py7slib.bridges.consolebridge import ConsoleBridge
+from py7slib.core.ewberrno import *
 import subprocess
 import os
 import serial
 import time
 import string
 
-class Serial_linux(GenDrvr) :
+
+class SerialLinux(ConsoleBridge) :
     '''
     Class that simplifies serial communication for use with WR LEN PTS in Linux.
 
@@ -64,6 +66,7 @@ class Serial_linux(GenDrvr) :
         self._serial = None
         self.ntries = ntries
         self.verbose = verbose
+        self.errno = Ewberrno()
 
     def open(self, port_name) :
         '''
@@ -82,10 +85,10 @@ class Serial_linux(GenDrvr) :
                 print ("Port %s succesfully opened " % (self.PORT))
         except ValueError as e:
             msg = "Error opening serial port %s" % (self.PORT)
-            raise Error(msg)
+            raise Error(self.errno.EBADIP, msg)
         except serial.SerialException as e:
             msg = "%s port could not be opened" % (self.PORT)
-            raise Error(msg)
+            raise Error(self.errno.ENXIO, msg)
 
     def close(self) :
         '''
@@ -259,6 +262,10 @@ class Serial_linux(GenDrvr) :
         Raises:
             PtsError
         '''
+        if "mac set" in cmd or "ip set" in cmd or "sfp detect" in cmd or "mode " in cmd:
+            aux = 0.001
+        else:
+            aux = self.INTERCHARTIMEOUT
         cmd = "%s\r" % cmd
         if self.verbose :
             print("\t %s" % (cmd))
@@ -271,7 +278,9 @@ class Serial_linux(GenDrvr) :
             # timeout between each write
             for c in cmd :
                 bwr += self._serial.write(c)
-                time.sleep(self.INTERCHARTIMEOUT) # Intern interCharTimeout isn't working, so put a manual timeout
+                #time.sleep(self.INTERCHARTIMEOUT) # Intern interCharTimeout isn't working, so put a manual timeout
+                time.sleep(aux) # Intern interCharTimeout isn't working, so put a manual timeout
+            
             self._serial.flush() # Wait until all data is written
 
             if bwr != len(cmd):
@@ -288,6 +297,8 @@ class Serial_linux(GenDrvr) :
                 # a high number of bytes (more than really would be) so you ensure
                 # that always you are reading all data returned by WR-LEN.
                 # Reading must be seted to blocking with timeout.
+                if 'sfp add' in cmd:
+                    time.sleep(0.5)
                 ret += self._serial.read(1000)
                 ret = ret[:-6] # Remove prompt from returned string
 
@@ -295,3 +306,6 @@ class Serial_linux(GenDrvr) :
 
         except serial.SerialTimeoutException as e :
             raise Retry("Write timout (%d sec) exceeded : %s" % (self.WRTIMEOUT,e))
+
+
+

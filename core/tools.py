@@ -29,7 +29,7 @@ The class and methods here still needs a little bit of clean-up
 #-------------------------------------------------------------------------------
 # Import system modules
 import sys, select
-import tty,termios, time
+#import tty,termios, time
 from ctypes import *
 
 # Import custom modules

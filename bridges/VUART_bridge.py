@@ -30,11 +30,11 @@ import re
 import time
 
 from subprocess import check_output
-from bridges.consolebridge import ConsoleBridge
-from bridges.ethbone import EthBone
-from core.p7sException import *
-from bridges.sdb import SDBNode
-from core.gendrvr import BusCritical, BusWarning
+from py7slib.bridges.consolebridge import ConsoleBridge
+from py7slib.bridges.ethbone import EthBone
+from py7slib.core.p7sException import *
+from py7slib.bridges.sdb import SDBNode
+from py7slib.core.gendrvr import BusCritical, BusWarning
 
 class VUART_bridge(ConsoleBridge):
     '''
@@ -43,7 +43,7 @@ class VUART_bridge(ConsoleBridge):
     This class implements the interface defined in ConsoleBridge abstract class
     for devices connected on the PCI bus or Ethernet (using Etherbone).
     '''
-      # Device ID for SPEC board (only one with PCI interface)
+    # Device ID for SPEC board (only one with PCI interface)
     PCI_DEVICE_ID_SPEC = 0x018d
     # Vendor ID for CERN
     VENDOR_ID_CERN = 0xce42
@@ -153,7 +153,7 @@ class VUART_bridge(ConsoleBridge):
         if self.verbose:
             print("Erasing old content of rx buffer in the VUART")
 
-        self.sendCommand("\x1b\r")
+        self.sendCommand("\x1b\r", buffered=False)
 
     def sendCommand(self, cmd):
         '''
@@ -190,15 +190,16 @@ class VUART_bridge(ConsoleBridge):
             time.sleep(1)
             timeout_cnt += 1
             if timeout_cnt >= self.MAX_TIMEOUT:
-                raise Error()  # virtual uart is not ready
+                #raise Error()  # virtual uart is not ready
+                return 'Error: virtual UART is not ready' # virtual uart is not ready
 
         bytes = bytearray(cmd)
         bytes.append(13) # insert \r
         try:
             for b in bytes:
                 self.bus.devwrite(None,offset=self.VUART_OFFSET+self.VUART_TX_REG, width=4, datum=b)
-                time.sleep(0.002)
-            time.sleep(0.35)
+                time.sleep(0.0008)
+            time.sleep(0.5)
             rx_raw = self.bus.read(self.VUART_OFFSET+self.VUART_RX_REG)
             if rx_raw & self.VUART_RDY_MSK:
                 cnt = (rx_raw & self.VUART_RX_CNT_MSK) >> 9
@@ -209,8 +210,11 @@ class VUART_bridge(ConsoleBridge):
                     cnt -= 1
 
             # The output from VUART contains the sent command twice, remove it
-            r_bytes = bytes.index('\n')+1
-            return bytes[r_bytes:-6]  # Remove the final "\r\nwrc#"
+            if 'wrc#' in bytes:
+                r_bytes = bytes.index('\n')+1
+                return bytes[r_bytes:-6]  # Remove the final "\r\nwrc#"
+            else : 
+                return bytes
         except BusWarning as e:
             raise e
 
