@@ -75,13 +75,15 @@ import sys
 from ctypes import *
 import time
 import struct
+import math
 import platform
 
 
 # Import common modules
-from core.gendrvr import *
+from py7slib.core.gendrvr import *
 from subprocess import check_output
 import binascii
+from py7slib.core.p7sException import *
 
 EB_PROTOCOL_VERSION = 1
 EB_ABI_VERSION      = 0x04
@@ -133,30 +135,8 @@ class EthBone(GenDrvr):
         '''
 
         if verbose: print "LD_LIBRARY_PATH=%s" % (os.getenv('LD_LIBRARY_PATH'))
-<<<<<<< HEAD
-        
-        libetherbone32 = "lib/precompiled/libetherbone32.so"
-        libetherbone64 = "lib/precompiled/libetherbone64.so"
-=======
-        #self.load_lib("libetherbone.so")
-        
-        libetherbone32 = "../../lib/precompiled/libetherbone32b.so"
-        libetherbone64 = "../../lib/precompiled/libetherbone64b.so"
->>>>>>> gui-dev
-        version = '64'
-        if 'i686' in platform.machine():
-            version = '32'
-
-        if version == '32' and os.path.exists(libetherbone32):
-            self.load_lib(libetherbone32)
-<<<<<<< HEAD
-        elif version == '64'and os.path.exists(libetherbone64):
-=======
-        elif version == '64' and os.path.exists(libetherbone64):
->>>>>>> gui-dev
-            self.load_lib(libetherbone64)
-        else:
-            self.load_lib("libetherbone.so")
+                
+        self.load_lib("./lib/libetherbone.so")
 
         ##Create empty ptr on structure used by ethbone
         self.socket    = c_uint(0)
@@ -546,11 +526,11 @@ class EthBone(GenDrvr):
             # Now check which ones are WR devices using eb-discover
             for udev in unknown_devices :
                 args = "udp/%s" % (udev)
-                ret = check_output(["eb-discover", args])
+                ret = check_output(["./bin/eb-discover", args])
                 if ret != '' : # is a WR device
                     devices.append(udev)
 
-        else :                                               # SLOW MODE
+        else :                                              # SLOW MODE
             # Scan to find WR devices in the network
             ip, bcast = subnet.split("/")
             end = int( (( math.ceil((32-int(bcast)) / 8.0) % 3) * 2) % 3 )
@@ -565,10 +545,10 @@ class EthBone(GenDrvr):
             def checkDevices(ip,devices) :
                 for i in range(1,255) :
                     ip[-1] = str(i)
-                    print "probando ip: %s" % ('.'.join(ip))
+                    #print "probando ip: %s" % ('.'.join(ip))
                     if isLastByte(ip) :
                         args = "udp/%s" % (ip if type(ip) == type("") else '.'.join(ip))
-                        ret = check_output(["eb-discover", args])
+                        ret = check_output(["./bin/eb-discover", args])
                         if ret != '' : # is a WR device
                             devices.append('.'.join(ip))
                         if int(ip[-1]) == 254 : return
