@@ -26,13 +26,13 @@ Script to write the SFP calibration values to a WR Device (using WRCORE commands
 # the GNU Lesser General Public License along with this  source; if not,       |
 # download it from http://www.gnu.org/licenses/lgpl-2.1.html                   |
 #------------------------------------------------------------------------------|
+# System imports
 import argparse as arg
 from ConfigParser import SafeConfigParser
 import time
 import sys
 
-sys.path.append('../../')
-
+# User defined imports
 from bridges.VUART_bridge import *
 from bridges.serial_bridge import *
 

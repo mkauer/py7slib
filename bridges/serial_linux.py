@@ -28,10 +28,10 @@ The serial_linux class allows to connect with WR devices over serial port in Lin
 #-------------------------------------------------------------------------------
 #                                   Import                                    --
 #-------------------------------------------------------------------------------
-from py7slib.core.p7sException import *
-from py7slib.core.serial_str_cleaner import *
-from py7slib.bridges.consolebridge import ConsoleBridge
-from py7slib.core.ewberrno import *
+from core.p7sException import *
+from core.serial_str_cleaner import *
+from bridges.consolebridge import ConsoleBridge
+from core.ewberrno import *
 import subprocess
 import os
 import serial
@@ -280,7 +280,7 @@ class SerialLinux(ConsoleBridge) :
                 bwr += self._serial.write(c)
                 #time.sleep(self.INTERCHARTIMEOUT) # Intern interCharTimeout isn't working, so put a manual timeout
                 time.sleep(aux) # Intern interCharTimeout isn't working, so put a manual timeout
-            
+
             self._serial.flush() # Wait until all data is written
 
             if bwr != len(cmd):
@@ -306,6 +306,3 @@ class SerialLinux(ConsoleBridge) :
 
         except serial.SerialTimeoutException as e :
             raise Retry("Write timout (%d sec) exceeded : %s" % (self.WRTIMEOUT,e))
-
-
-

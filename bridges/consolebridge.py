@@ -25,22 +25,21 @@ ConsoleBridge abstract class
 # download it from http://www.gnu.org/licenses/lgpl-2.1.html                   |
 #------------------------------------------------------------------------------|
 
-# Imports
+# System imports
 import abc
 import sys
 import serial
 import time
-
-from py7slib.core.p7sException import *
-from py7slib.bridges import *
-#from bridges.VUART_bridge import VUART_bridge as VUART_bridge
-#from bridges.serial_bridge import SerialBridge as serial_bridge
 from subprocess import check_output
+
+# User defined imports
+from core.p7sException import p7sException
 from ethbone import EthBone
 
-class ConsoleBridge() :
-    
-    
+
+class ConsoleBridge():
+
+
     # Device ID for SPEC board (only one with PCI interface)
     PCI_DEVICE_ID_SPEC = 0x018d
     # Vendor ID for CERN
@@ -64,7 +63,7 @@ class ConsoleBridge() :
 
     # Max timeout value (in seconds)
     MAX_TIMEOUT = 5
-    
+
     '''
     Abstract class that defines the methods that must be implemented in order to connect to the console of a WR device.
 
@@ -161,31 +160,31 @@ class ConsoleBridge() :
             if bus == "pci" :
                 #devices['pci'] = VUART_bridge.scan("pci")
                 devices['pci'] = ConsoleBridge.scanPci()
-    
+
             elif bus == "eth" :
                 #devices['eth'] = VUART_bridge.scan("eth")
                 devices['eth'] = ConsoleBridge.scanEth(subnet)
-    
+
             elif bus == "serial" :
                 #devices['serial'] = serial_bridge.scan()
                 devices['serial'] = ConsoleBridge.scanSerial(numport)
-                    
+
             else : #if bus == "all" :
-                
+
                 #devices['pci'] = ConsoleBridge.scanPci()
                 devices['serial'] = ConsoleBridge.scanSerial(numport)
                 devices['eth'] = ConsoleBridge.scanEth(subnet)
         else: #si es windows solo serial
             devices['serial'] = ConsoleBridge.scanSerial(numport)
-            
+
 
         #except:
             # Throw it to a upper layer
             #raise BadData(38, 'Function not found')
 
         return devices
-    
-    
+
+
     @staticmethod
     def scanPci():
         '''
@@ -221,9 +220,9 @@ class ConsoleBridge() :
                 devices.append(dev)
 
         return devices
-    
-    
-    
+
+
+
     @staticmethod
     def scanEth(subnet="192.168.7.0/24"):
         '''
@@ -257,10 +256,10 @@ class ConsoleBridge() :
             print "Etherbone scan error"
 
         return devices
-    
-    
-    
-    
+
+
+
+
     @staticmethod
     def scanSerial(nports="50"):
         '''
@@ -311,6 +310,3 @@ class ConsoleBridge() :
                 pass
 
         return devices
-
-
-

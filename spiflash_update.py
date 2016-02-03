@@ -25,12 +25,11 @@ import re
 import subprocess
 from optparse import OptionParser
 
-
-sys.path.append('../../')
-
-from bridges.ethbone import *
+from bridges.ethbone import EthBone
 from periph.ipc_spiflash import *
 from bridges.sdb import SDBNode
+from core.gendrvr import BusException
+
 
 def main():
     # Vendor ID for CERN
@@ -57,12 +56,12 @@ def main():
     ## Opening Bus connection
     try:
         if options.bus_type.lower() == "eb":
-            bus = EthBone("udp/"+options.lun,(options.mode=="test"))
+            bus = EthBone("udp/%s" % options.lun, (options.mode=="test"))
             bus.silent=options.silent
         #else: ##options.bus_type == "UART"
            # bus = wb_UART()
             #bus.open(options.lun)
-    except BusException, e:
+    except BusException as e:
         print "Fatal: %s" % (e)
         return 1
 

@@ -36,7 +36,9 @@ This file is based on the official version 1.1 of sdb.h
 import os
 from ctypes import *
 import ctypes
-from py7slib.core.gendrvr import *
+
+# User defined modules
+from core.gendrvr import BusWarning, BusCritical, BusException
 
 # Define specific for SDB Flags
 SDB_MAGIC                   = 0x5344422d

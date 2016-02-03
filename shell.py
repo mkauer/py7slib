@@ -30,9 +30,8 @@ import argparse as arg
 import sys
 import socket
 
-sys.path.append('../../../')
+from core.vuart import VUART_shell
 
-from core.vuart import *
 
 def main():
     '''

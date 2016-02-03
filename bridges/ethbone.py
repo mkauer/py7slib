@@ -77,13 +77,12 @@ import time
 import struct
 import math
 import platform
-
+import binascii
+from subprocess import check_output
 
 # Import common modules
-from py7slib.core.gendrvr import *
-from subprocess import check_output
-import binascii
-from py7slib.core.p7sException import *
+from core.gendrvr import *
+from core.p7sException import p7sException
 
 EB_PROTOCOL_VERSION = 1
 EB_ABI_VERSION      = 0x04
@@ -135,7 +134,7 @@ class EthBone(GenDrvr):
         '''
 
         if verbose: print "LD_LIBRARY_PATH=%s" % (os.getenv('LD_LIBRARY_PATH'))
-                
+
         self.load_lib("./lib/libetherbone.so")
 
         ##Create empty ptr on structure used by ethbone

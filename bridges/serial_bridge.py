@@ -32,11 +32,11 @@ import serial
 import cmd
 from wx import OutBottom
 
-from consolebridge import *
+from bridges.consolebridge import ConsoleBridge
 from serial_linux import *
 from serial_windows import *
-from py7slib.core.p7sException import *
-from py7slib.core.gendrvr import BusCritical, BusWarning
+from core.p7sException import *
+from core.gendrvr import BusCritical, BusWarning
 
 class SerialBridge(ConsoleBridge):
     '''

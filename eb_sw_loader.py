@@ -19,13 +19,11 @@ import re
 import subprocess
 import argparse as arg
 
-
-sys.path.append('../../')
-
 from bridges.ethbone import *
 #from pts_core.bridges.wb_uart import *
 from periph.ipc_spiflash import *
 from bridges.sdb import SDBNode
+
 
 def main():
     '''

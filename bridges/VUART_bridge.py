@@ -25,16 +25,18 @@ The VUART_bridge class allows to connect with WR devices over Etherbone or PCI b
 # download it from http://www.gnu.org/licenses/lgpl-2.1.html                   |
 #------------------------------------------------------------------------------|
 
-# Imports
+# System imports
 import re
 import time
-
 from subprocess import check_output
-from py7slib.bridges.consolebridge import ConsoleBridge
-from py7slib.bridges.ethbone import EthBone
-from py7slib.core.p7sException import *
-from py7slib.bridges.sdb import SDBNode
-from py7slib.core.gendrvr import BusCritical, BusWarning
+
+# User defined imports
+from consolebridge import ConsoleBridge
+from ethbone import EthBone
+from core.p7sException import p7sException
+from bridges.sdb import SDBNode
+from core.gendrvr import BusCritical, BusWarning
+
 
 class VUART_bridge(ConsoleBridge):
     '''
@@ -153,7 +155,7 @@ class VUART_bridge(ConsoleBridge):
         if self.verbose:
             print("Erasing old content of rx buffer in the VUART")
 
-        self.sendCommand("\x1b\r", buffered=False)
+        self.sendCommand("\x1b\r")
 
     def sendCommand(self, cmd):
         '''
@@ -213,7 +215,7 @@ class VUART_bridge(ConsoleBridge):
             if 'wrc#' in bytes:
                 r_bytes = bytes.index('\n')+1
                 return bytes[r_bytes:-6]  # Remove the final "\r\nwrc#"
-            else : 
+            else :
                 return bytes
         except BusWarning as e:
             raise e

@@ -31,10 +31,11 @@ import sys
 import time
 import select
 import datetime as dt
-from bridges.VUART_bridge import *
-from core.gendrvr import BusCritical, BusWarning
-from core.p7sException import p7sException, Retry, Error
-from core.ewberrno import *
+# User defined modules
+from bridges.VUART_bridge import VUART_bridge
+from gendrvr import BusCritical, BusWarning
+from p7sException import p7sException, Retry, Error
+from ewberrno import Ewberrno
 
 class VUART_shell():
     '''
@@ -109,7 +110,7 @@ class VUART_shell():
             try:
                 self.vuart.open()
                 break
-            except Exception as e:
+            except BusWarning as e:
                 if cur >= attemps:
                     raise e
                 print("The desired device cannot be connected, retrying...")
@@ -118,14 +119,15 @@ class VUART_shell():
         self.vuart.flushInput()
         self.ver_date = None
         self.gui_enabled = False
-        self.refresh = 5 # Refresh time for interactive commands (1 sec)
-        self.__get_firm_date__(self.vuart.sendCommand("ver").decode('utf8'))
+        self.refresh = 5  # Refresh time for interactive commands (1 sec)
+        ver = self.vuart.sendCommand("ver")
+        self.__get_firm_date__(ver.decode('utf8', errors='ignore'))
 
         # Compile regular expresions
         self.mode_regex = re.compile(self.MODE_REGEX)
         self.time_regex = re.compile(self.TIME_REGEX)
-        self.wr0_regex = re.compile("%s%s"%("wr0",self.PORT_REGEX))
-        self.wr1_regex = re.compile("%s%s"%("wr1",self.PORT_REGEX))
+        self.wr0_regex = re.compile("%s%s" % ("wr0", self.PORT_REGEX))
+        self.wr1_regex = re.compile("%s%s" % ("wr1", self.PORT_REGEX))
         self.ip_regex = re.compile(self.IP_REGEX)
         self.syncs_regex = re.compile(self.SYNCS_REGEX)
         self.rtt_regex = re.compile(self.RTT_REGEX)

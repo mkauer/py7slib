@@ -19,9 +19,6 @@ import re
 import subprocess
 import argparse as arg
 
-
-sys.path.append('../../')
-
 from bridges.ethbone import *
 from bridges.wb_uart import *
 from bridges.sdb import *
