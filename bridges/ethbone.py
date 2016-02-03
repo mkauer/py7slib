@@ -90,6 +90,8 @@ EB_BUS_MODEL        = [0x44,0x88][sys.maxsize > 2**32]
 EB_MEMORY_MODEL     = 0x0000
 EB_ABI_CODE         = ((EB_ABI_VERSION << 8) + EB_BUS_MODEL + EB_MEMORY_MODEL)
 
+PYDIR=os.path.dirname(os.path.abspath(__file__))
+
 def py_cb_func(user, dev, op, status):
      if status: raise NameError('Callback Error: %s' % (status))
      print "%x" %(status)
@@ -135,7 +137,7 @@ class EthBone(GenDrvr):
 
         if verbose: print "LD_LIBRARY_PATH=%s" % (os.getenv('LD_LIBRARY_PATH'))
 
-        self.load_lib("./lib/libetherbone.so")
+        self.load_lib("%s/../lib/libetherbone.so" % PYDIR)
 
         ##Create empty ptr on structure used by ethbone
         self.socket    = c_uint(0)
@@ -524,8 +526,9 @@ class EthBone(GenDrvr):
 
             # Now check which ones are WR devices using eb-discover
             for udev in unknown_devices :
+                cmd = "%s/../bin/eb-discover" % PYDIR
                 args = "udp/%s" % (udev)
-                ret = check_output(["./bin/eb-discover", args])
+                ret = check_output([cmd, args])
                 if ret != '' : # is a WR device
                     devices.append(udev)
 
@@ -546,8 +549,9 @@ class EthBone(GenDrvr):
                     ip[-1] = str(i)
                     #print "probando ip: %s" % ('.'.join(ip))
                     if isLastByte(ip) :
+                        cmd = "%s/../bin/eb-discover" % PYDIR
                         args = "udp/%s" % (ip if type(ip) == type("") else '.'.join(ip))
-                        ret = check_output(["./bin/eb-discover", args])
+                        ret = check_output([cmd, args])
                         if ret != '' : # is a WR device
                             devices.append('.'.join(ip))
                         if int(ip[-1]) == 254 : return

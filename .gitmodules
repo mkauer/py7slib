@@ -1,3 +1,0 @@
-[submodule "lib/etherbone-core"]
-	path = lib/etherbone-core
-	url = git://ohwr.org/hdl-core-lib/etherbone-core.git
