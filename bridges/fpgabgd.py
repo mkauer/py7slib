@@ -1,7 +1,7 @@
 #!   /usr/bin/env   python
 # -*- coding: utf-8 -*
 '''
-This file contains the eb1 class which is a child of the abstract class GenDrv (gendrvr.py)
+This file contains the FPGABGD class which is a child of the abstract class GenDrv (gendrvr.py)
 
 @file
 @date Created on Apr 24, 2014
@@ -35,8 +35,8 @@ import os
 # Import common modules
 from core.gendrvr import *
 
-class EB1(GenDrvr):
-    '''The EB1 class has been created to interface WB access within the WRS.
+class FPGABGD(GenDrvr):
+    '''The FPGABGD class has been created to interface WB access within the WRS.
 
     We have create a simple library that open the device and can perform
     read/write on the WB bus.
@@ -44,7 +44,7 @@ class EB1(GenDrvr):
     to keep it as simple as possible.
     '''
 
-    def __init__(self,LUN, show_dbg=False):
+    def __init__(self,baseaddr, show_dbg=False):
         '''Constructor
 
         Args:
@@ -52,22 +52,24 @@ class EB1(GenDrvr):
             show_dbg : enables debug info
         '''
         self.show_dbg=show_dbg
-        self.load_lib("libeb1.so")
+        self.load_lib("libfpgabgd.so")
+        self.baseaddr=baseaddr
+        self.sizeaddr=0 #0 is used for default size addr
 
         if self.show_dbg: print self.info()+"\n"
-        self.open(LUN)
+        self.open(0)
 
     def open(self, LUN):
         '''Open the device and map to the FPGA bus
         '''
-        self.hdev=self.lib.EB1_open()
+        self.hdev=self.lib.FPGABGD_open(c_uint(self.baseaddr),c_uint(self.sizeaddr))
         if self.hdev==0:
             raise NameError("Could not open device")
 
     def close(self):
         '''Close the device and unmap
         '''
-        self.lib.EB1_close()
+        self.lib.FPGABGD_close()
 
     def devread(self, bar, offset, width):
         '''Method that do a read on the devices using /dev/mem device
@@ -81,7 +83,7 @@ class EB1(GenDrvr):
         INTP = POINTER(c_uint)
         data = c_uint(0xBADC0FFE)
         pData = cast(addressof(data), INTP)
-        ret=self.lib.EB1_wishbone_RW(self.hdev,c_uint(address),pData,0)
+        ret=self.lib.FPGABGD_wishbone_RW(self.hdev,c_uint(address),pData,0)
         if self.show_dbg: print "R@x%08X > 0x%08x" %(address, pData[0])
         if ret !=0:
             raise NameError('Bad Wishbone Read')
@@ -102,7 +104,7 @@ class EB1(GenDrvr):
         data = c_uint(datum)
         pData = cast(addressof(data), INTP)
         if self.show_dbg: print "W@x%08X < 0x%08x" %( address, pData[0])
-        ret=self.lib.EB1_wishbone_RW(self.hdev,c_uint(address),pData,1)
+        ret=self.lib.FPGABGD_wishbone_RW(self.hdev,c_uint(address),pData,1)
         if ret !=0:
             raise NameError('Bad Wishbone Write @0x%08x > 0x%08x (ret=%d)' %(address,datum, ret))
         return pData[0]
@@ -110,5 +112,5 @@ class EB1(GenDrvr):
     def info(self):
         """get a string describing the interface the driver is bound to """
         inf = (c_char*60)()
-        self.lib.EB1_version(inf)
-        return "EB1 library (%s): git rev %s" % (self.libname,inf.value)
+        self.lib.FPGABGD_version(inf)
+        return "FPGABGD library (%s): git rev %s" % (self.libname,inf.value)
