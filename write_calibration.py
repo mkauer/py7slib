@@ -62,8 +62,9 @@ def main():
     if args.bus == 'ethbone':
         uart = VUART_bridge('eth', args.lun, args.debug)
     else:
-        uart = Serial_bridge(port="/dev/ttyUSB%s" % args.lun, verbose=args.debug)
-    uart.open()
+        uart = SerialBridge(port="/dev/ttyUSB%s" % args.lun, verbose=args.debug)
+    # Hack for new releases of WRC-2P
+    uart.open(interchartimeout=0.01)
 
     parser = SafeConfigParser()
     ret = parser.read(args.input)
