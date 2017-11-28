@@ -458,12 +458,12 @@ class SpiFlash:
             #check written RAM
             #FIXME: do this with devblockread
             rbdata_list=[]
-            #for j in range(0,len(data_packets[i])):
-                #rbdata=self.bus.devread(0, RAM_offset+4*i*pktwords+4*j, 4)
-                #rbdata_list.append(rbdata)
-            #fwLoad_er=self.cmpList(rbdata_list,data_packets[i])
-            #if fwLoad_er:
-                #return 1
+            for j in range(0,len(data_packets[i])):
+                rbdata=self.bus.devread(0, RAM_offset+4*i*pktwords+4*j, 4)
+                rbdata_list.append(rbdata)
+            fwLoad_er=self.cmpList(rbdata_list,data_packets[i])
+            if fwLoad_er:
+                return 1
         #enable the processor
         self.bus.devwrite(0, SYSCON_offset, 4, 0x0deadbee)
         return 0

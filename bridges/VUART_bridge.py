@@ -200,8 +200,7 @@ class VUART_bridge(ConsoleBridge):
         try:
             for b in bytes:
                 self.bus.devwrite(None,offset=self.VUART_OFFSET+self.VUART_TX_REG, width=4, datum=b)
-                #time.sleep(0.0008)
-                time.sleep(0.05)
+                time.sleep(0.0008)
             time.sleep(0.5)
             rx_raw = self.bus.read(self.VUART_OFFSET+self.VUART_RX_REG)
             if rx_raw & self.VUART_RDY_MSK:
