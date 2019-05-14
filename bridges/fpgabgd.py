@@ -54,7 +54,7 @@ class FPGABGD(GenDrvr):
         self.show_dbg=show_dbg
         self.load_lib("libfpgabgd.so")
         self.baseaddr=baseaddr
-        self.sizeaddr=0 #0 is used for default size addr
+        self.sizeaddr=0x200000 #0 is used for default size addr
 
         if self.show_dbg: print self.info()+"\n"
         self.open(0)

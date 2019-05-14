@@ -81,7 +81,7 @@ class wb_UART(GenDrvr) :
             timeout=self.RDTIMEOUT, writeTimeout=self.WRTIMEOUT, interCharTimeout=self.INTERCHARTIMEOUT)
             self._serial.flushOutput()
             if self.verbose :
-                print ("Port %s succesfully opened " % (self.PORT))
+                print ("\nPort %s succesfully opened " % (self.PORT))
         except ValueError as e:
             msg = "Error opening serial port %s" % (self.PORT)
             raise Error(msg)
@@ -264,7 +264,7 @@ class wb_UART(GenDrvr) :
                 # that always you are reading all data returned by WR-LEN.
                 # Reading must be seted to blocking with timeout.
                 ret += self._serial.read(1000)
-                ret = ret[:-6] # Remove prompt from returned string
+                #ret = ret[:-6] # Remove prompt from returned string
 
             return ret
 
