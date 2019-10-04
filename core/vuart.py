@@ -32,7 +32,7 @@ import time
 import select
 import datetime as dt
 # User defined modules
-from bridges.VUART_bridge import VUART_bridge
+from py7slib.bridges.VUART_bridge import VUART_bridge
 from gendrvr import BusCritical, BusWarning
 from p7sException import p7sException, Retry, Error
 from ewberrno import Ewberrno

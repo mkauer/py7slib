@@ -33,9 +33,9 @@ from subprocess import check_output
 # User defined imports
 from consolebridge import ConsoleBridge
 from ethbone import EthBone
-from core.p7sException import p7sException
-from bridges.sdb import SDBNode
-from core.gendrvr import BusCritical, BusWarning
+from py7slib.core.p7sException import p7sException
+from py7slib.bridges.sdb import SDBNode
+from py7slib.core.gendrvr import BusCritical, BusWarning
 
 
 class VUART_bridge(ConsoleBridge):
