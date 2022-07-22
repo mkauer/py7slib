@@ -205,6 +205,7 @@ class EthBone(GenDrvr):
               self.getPtrData(self.device)
               )
         """
+        # LUN.encode('ascii') required for py3 compatibility
         status = self.lib.eb_device_open(self.socket,
                                          LUN.encode('ascii'),
                                          self.EB_ADDRX|self.EB_DATAX,
