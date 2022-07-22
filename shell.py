@@ -31,6 +31,7 @@ import sys
 import socket
 
 from core.vuart import VUART_shell
+from core.p7sException import *
 
 
 def main():
@@ -43,6 +44,8 @@ def main():
     parser.add_argument('IP', type=str, help='IP of the device')
     parser.add_argument('--input','-i',help='Execute an input script of WRPC commands')
     parser.add_argument('--output','-o',help='Save the output of an input script to a file')
+    parser.add_argument('--verbose', '-v', action='store_true',
+                        help='Verbose output')
 
     args = parser.parse_args()
 
@@ -53,20 +56,23 @@ def main():
         exit(1)
 
     try:
-        shell = VUART_shell(args.IP)
+        shell = VUART_shell(ip=args.IP, verbose=args.verbose)
         if args.input:
+            #print('debug1')
             fin = open(args.input, 'r')
             fout = open(args.output,'a+') if args.output else None
             shell.run_script(fin, fout)
         else:
+            #print('debug2')
             shell.run()
+        
     #TODO: use exceptions from vuart (not defined yet)
     except Exception as e:
-        print e
-        sys.stdout.write ("\033[1;31mError\033[0m: Failed connection with the WR-LEN (%s)\n" % (args.IP))
-        print ("See the manual for more deatils")
+        print(e)
+        sys.stdout.write("\033[1;31mError\033[0m: Failed connection with the WR-LEN (%s)\n" % (args.IP))
+        print("See the manual for more deatils")
     except Error as e:
-        print e
+        print(e)
 
 
 if __name__ == '__main__':

@@ -81,7 +81,7 @@ class wb_UART(GenDrvr) :
             timeout=self.RDTIMEOUT, writeTimeout=self.WRTIMEOUT, interCharTimeout=self.INTERCHARTIMEOUT)
             self._serial.flushOutput()
             if self.verbose :
-                print ("\nPort %s succesfully opened " % (self.PORT))
+                print("\nPort %s succesfully opened " % (self.PORT))
         except ValueError as e:
             msg = "Error opening serial port %s" % (self.PORT)
             raise Error(msg)
@@ -95,7 +95,7 @@ class wb_UART(GenDrvr) :
         '''
         self._serial.close()
         if self.verbose :
-            print ("Port %s succesfully closed " % self.PORT)
+            print("Port %s succesfully closed " % self.PORT)
 
     def devread(self, bar, offset, width) :
         '''

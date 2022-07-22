@@ -31,11 +31,11 @@ import time
 from subprocess import check_output
 
 # User defined imports
-from consolebridge import ConsoleBridge
-from ethbone import EthBone
-from py7slib.core.p7sException import p7sException
-from py7slib.bridges.sdb import SDBNode
-from py7slib.core.gendrvr import BusCritical, BusWarning
+from bridges.consolebridge import ConsoleBridge
+from bridges.ethbone import EthBone
+from core.p7sException import *
+from bridges.sdb import SDBNode
+from core.gendrvr import *
 
 
 class VUART_bridge(ConsoleBridge):
@@ -85,17 +85,21 @@ class VUART_bridge(ConsoleBridge):
         # Input control
         if interface != "eth" and interface != "pci":
             raise BadData(1, "eth/pci")
-        if interface == "eth" and not re.match(self.valid_ip,port):
+        if interface == "eth" and not re.match(self.valid_ip, port):
             raise BadData(2, port)
-        if interface == "pci" and not re.match(self.valid_pci,port):
+        if interface == "pci" and not re.match(self.valid_pci, port):
             raise BadData(3, port)
 
         self.interface = interface
         self.port = "udp/"+port
+        #self.port = "udp4/"+port
+        #self.port = "tcp/"+port
+        #self.port = 'upd/10.2.7.185'
         self.bus = None
         self.verbose = verbose
 
-    def open(self, ethbone_dbg=False):
+        
+    def open(self):
         '''
         Method to open a new connection with a WR device.
 
@@ -105,22 +109,34 @@ class VUART_bridge(ConsoleBridge):
         Raises:
             ConsoleError : When the specified device fails opening.
         '''
+
         if self.interface == 'eth':
             try:
-                self.bus = EthBone(self.port, False)
-            except BusCritical:
+                self.bus = EthBone(self.port, self.verbose)
+            except BusCritical as e:
+            #except Exception as e:
+                #print(e)
                 BadData(4, self.port)
+                raise e
+            
         elif self.interface == 'pci':
             raise Error(1, "PCI bus not implemented")
 
         # Look for VUART address in the sdb bus
-        sdb = SDBNode(self.bus, None)
+        if self.verbose: print('Scanning SDB bus...')
+        sdb = SDBNode(bus=self.bus, base=None)
+        #sdb = SDBNode(bus=self.bus, base=None, debug=self.verbose)
+        if self.verbose: print('  set sdb node')
         sdb.base = sdb.scan()
         sdb.parse()
+        if self.verbose: print('  finding vuart offset...')
+        #print(sdb.findProduct(self.VENDOR_ID_CERN, self.WR_UART_ID))
         self.VUART_OFFSET = sdb.findProduct(self.VENDOR_ID_CERN, self.WR_UART_ID)[0][1] # Check this assignment
         if self.verbose:
-            print("VUART address is 0x%x" % (self.VUART_OFFSET))
+            #print("VUART address is 0x%x" % (self.VUART_OFFSET))
+            print("  vuart at 0x{0}".format(self.VUART_OFFSET))
 
+            
     def isOpen(self):
         '''
         This method checks wheter device connection is stablished.
@@ -130,6 +146,7 @@ class VUART_bridge(ConsoleBridge):
         '''
         return (self.bus is not None)
 
+    
     def close(self):
         '''
         Method to close an existing connection with a WR device.
@@ -142,6 +159,7 @@ class VUART_bridge(ConsoleBridge):
         except BusCritical as e:
             raise Error(2, e.message)
 
+        
     def flushInput(self):
         '''
         Method to clear read buffer of the VUART
@@ -155,8 +173,10 @@ class VUART_bridge(ConsoleBridge):
         if self.verbose:
             print("Erasing old content of rx buffer in the VUART")
 
-        self.sendCommand("\x1b\r")
+        #self.sendCommand("\x1b\r")
+        self.sendCommand("\x1b")
 
+        
     def sendCommand(self, cmd):
         '''
         Method to pass a command to the Virtual UART module of a WR Device
@@ -181,44 +201,68 @@ class VUART_bridge(ConsoleBridge):
         Raises:
 
         '''
-        if self.verbose and cmd != "\r":
-            print("Sending command '%s'" % (cmd))
-        bytes = []
-
+        if self.verbose and cmd:
+            print('Sending command: {0}'.format(cmd))
+        
+        #bytes = []
+        
         # Wait for ready bit
         timeout_cnt = 0
         ready = self.bus.read(self.VUART_OFFSET+self.VUART_TX_REG) & self.VUART_RDY_MSK
+        if self.verbose: print('  ready = {0}'.format(ready))
+        
         while not ready:
+            if self.verbose: print('not ready...')
             time.sleep(1)
             timeout_cnt += 1
             if timeout_cnt >= self.MAX_TIMEOUT:
                 #raise Error()  # virtual uart is not ready
                 return 'Error: virtual UART is not ready' # virtual uart is not ready
 
-        bytes = bytearray(cmd)
+        bytes = bytearray(cmd.encode())
         bytes.append(13) # insert \r
-        try:
-            for b in bytes:
-                self.bus.devwrite(None,offset=self.VUART_OFFSET+self.VUART_TX_REG, width=4, datum=b)
-                time.sleep(0.0008)
-            time.sleep(0.5)
-            rx_raw = self.bus.read(self.VUART_OFFSET+self.VUART_RX_REG)
-            if rx_raw & self.VUART_RDY_MSK:
-                cnt = (rx_raw & self.VUART_RX_CNT_MSK) >> 9
+        #try:
+        for b in bytes:
+            if self.verbose: print('  writing command byte {0}'.format(b))
+            self.bus.devwrite(None, offset=self.VUART_OFFSET+self.VUART_TX_REG, width=4, datum=b)
+            time.sleep(0.0008)
+        time.sleep(0.5)
+        if self.verbose: print('  finished writing command to bus')
 
-                while cnt > 0:
-                    bytes.append(rx_raw&self.VUART_RX_DAT_MKS)
-                    rx_raw = self.bus.read(self.VUART_OFFSET+self.VUART_RX_REG)
-                    cnt -= 1
 
-            # The output from VUART contains the sent command twice, remove it
-            if 'wrc#' in bytes:
-                r_bytes = bytes.index('\n')+1
-                return bytes[r_bytes:-6]  # Remove the final "\r\nwrc#"
-            else :
-                return bytes
-        except BusWarning as e:
-            raise e
+        # reset bytes for read
+        bytes = bytearray()
+        rx_raw = self.bus.read(self.VUART_OFFSET+self.VUART_RX_REG)
+        if self.verbose: print('  rx_raw = {0}'.format(rx_raw))
+        if self.verbose: print('  ready mask = '.format(rx_raw & self.VUART_RDY_MSK))
+        if rx_raw & self.VUART_RDY_MSK:
+            cnt = (rx_raw & self.VUART_RX_CNT_MSK) >> 9
+            if self.verbose: print('  count = {0}'.format(cnt))
+            
+            while cnt > 0:
+                bytes.append(rx_raw&self.VUART_RX_DAT_MKS)
+                rx_raw = self.bus.read(self.VUART_OFFSET+self.VUART_RX_REG)
+                cnt -= 1
+            if self.verbose: print('  finished reading')
+            
+        # The output from VUART contains the sent command twice, remove it
+        if self.verbose: print('FULL BYTES = \n{0}\n'.format(bytes))
+        if 'wrc#'.encode() in bytes:
+            r_bytes = bytes.index('\n'.encode())+1
+            #print('return stripped bytes from sendCommand()')
+            # remove first and last bits and decode
+            # r_bytes is the index after the command echo
+            # -6 is the ending "\r\nwrc#"
+            # can't decode 0x81 - adding ignore
+            return bytes[r_bytes:-6].decode('utf-8', errors='ignore')
+            #return bytes[r_bytes:-6]
+        
+        else:
+            #print('return all bytes from sendCommand()')
+            return bytes.decode('utf-8', errors='ignore')
+        
+        #except BusWarning as e:
+        #   raise e
 
 
     def devwrite(self, bar, offset, width, datum):
@@ -236,6 +280,7 @@ class VUART_bridge(ConsoleBridge):
         #TODO: put the following setences inside a try-except block
         return self.bus.devwrite(bar, offset, width, datum)
 
+    
     def devread(self, bar, offset, width):
         '''
         Method read a register through EtherBone bus
@@ -250,8 +295,9 @@ class VUART_bridge(ConsoleBridge):
         #TODO: put the following setences inside a try-except block
         return self.bus.devread(bar, offset, width)
 
+    
     @staticmethod
-    def scan(bus="all", subnet="192.168.7.0/24"):
+    def scan(bus="all", subnet="10.2.7.0/24"):
         '''
         Method to scan WR devices connected to the PC.
 

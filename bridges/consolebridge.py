@@ -33,8 +33,8 @@ import time
 from subprocess import check_output
 
 # User defined imports
-from py7slib.core.p7sException import p7sException
-from ethbone import EthBone
+from core.p7sException import *
+from bridges.ethbone import EthBone
 
 
 class ConsoleBridge():
@@ -253,7 +253,7 @@ class ConsoleBridge():
             #print "Fallo en es escaneo etherbone"
             #raise e
         except :
-            print "Etherbone scan error"
+            print("Etherbone scan error")
 
         return devices
 

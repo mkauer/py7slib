@@ -367,10 +367,10 @@ def main():
     ipmi_close_file()
 
     test = open('test.out', 'r').read()
-    print ipmi_get_mfg_date(test)
+    print(ipmi_get_mfg_date(test))
     d = ipmi_get_internal_use_data(test)
     for v in d:
-        print hex(v)
+        print(hex(v))
 
 if __name__ == "__main__":
     main()

@@ -38,7 +38,7 @@ from ctypes import *
 import ctypes
 
 # User defined modules
-from py7slib.core.gendrvr import BusWarning, BusCritical, BusException
+from core.gendrvr import *
 
 # Define specific for SDB Flags
 SDB_MAGIC                   = 0x5344422d
@@ -66,7 +66,7 @@ class StructStr(BigEndianStructure):
         for field_name, field_type in self._fields_:
             var=getattr(self, field_name)
             if field_type.__bases__[0] is StructStr:
-#                msg+="  * %s ....\n" %(field_type.__bases__)
+                #msg+="  * %s ....\n" %(field_type.__bases__)
                 msg+="%s" %(var)
             elif field_name=="vendor_id":
                  msg+="%-15s: 0x%016x" % (field_name,var)
@@ -80,8 +80,8 @@ class StructStr(BigEndianStructure):
                 if type(var)==long or type(var)==int:
                     try:
                         fmt="0x%%0%dx\n" %(ctypes.sizeof(field_type)*2)
-                    except Exception, e:
-                        print e
+                    except Exception as e:
+                        print(e)
                         fmt="0x%x\n"
                     msg+=fmt %(var)
                 else:
@@ -271,12 +271,12 @@ class SDBNode():
         * several records that can be linked to a child (another SDBNode)
     """
     base = None  # address of the SDB interconnect record.
-    offset=0     # offset of the nested interconnect (child crossbar)
-    level=0      # return its sub-level (0 for root)
-    buspath_prefix=""
-    debug=False
+    offset = 0     # offset of the nested interconnect (child crossbar)
+    level = 0      # return its sub-level (0 for root)
+    buspath_prefix = ""
+    debug = False
 
-    def __init__(self,bus,base,parent=None):
+    def __init__(self, bus, base, parent=None, debug=False):
         """
 
         Args:
@@ -285,30 +285,33 @@ class SDBNode():
             the class will automatically call a scan
             parent: point to the parent structure in case we are not root.
         """
-        self.parent=parent
-        if parent!=None:
-            self.level=parent.level+1
-            self.debug=parent.debug
-        self.interconnect=sdb_interconnect()
-        self.elements=[]
-        self.bus=bus
-        self.base=base
+        self.parent = parent
+        if parent != None:
+            self.level = parent.level+1
+            self.debug = parent.debug
+        self.interconnect = sdb_interconnect()
+        self.elements = []
+        self.bus = bus
+        self.base = base
+        self.debug = debug
+        
 
-
-    def parse(self,maxlevel=-1):
+    def parse(self, maxlevel=-1):
         """
         Parse the SDB structure
 
         If the "base" member has not been set this function will call the scan() method
 
         Args:
-            maxlevel: the maximum number of nested bus we can explore (if -1 we stop when we don't find new one)
+            maxlevel: the maximum number of nested bus we can explore 
+                      (if -1 we stop when we don't find new one)
         """
         ## Check that we have a correct base, otherwise we scan it
         if self.base==None:
             self.base=self.scan()
         else:
-            if self.bus.read(self.base) != SDB_MAGIC: raise BaseException("Sdb base offset 0x%08x has not a valid sdb magic" %(self.base))
+            if self.bus.read(self.base) != SDB_MAGIC:
+                raise BaseException("Sdb base offset 0x%08x has not a valid sdb magic" %(self.base))
 
         ## Read the interconnect info (Where the SDB is stored)
         self.readrecord(self.base,self.interconnect)
@@ -329,7 +332,8 @@ class SDBNode():
                 n.parse(nextlevel)
             self.elements.append((el,n))
 
-    def scan(self,mask=0x10000000):
+            
+    def scan(self, mask=0x10000000):
         """
         This function scan the FPGA memory map to find a valid sdb root
 
@@ -349,20 +353,25 @@ class SDBNode():
 
         """
 
-        if mask<=0x100: raise BaseException("Could not find sdb root")
+        if mask<=0x100:
+            raise BaseException("Could not find sdb root")
 
-        for i in range(14,-1,-1): ##TODO: Check that reverse scanning is always better
+        for i in range(14, -1, -1): ##TODO: Check that reverse scanning is always better
             try:
-                offset=mask+i*mask
-                datar=self.bus.read(offset)
-                if self.debug: print "@0x%08x > 0x%08x" %(offset,datar)
-                if datar==SDB_MAGIC: return offset
-            except BusWarning,e:
-                if self.debug: print e
+                offset = mask+i*mask
+                datar = self.bus.read(offset)
+                if self.debug:
+                    print("@0x%08x > 0x%08x" %(offset,datar))
+                if datar == SDB_MAGIC:
+                    return offset
+            except BusWarning as e:
+                if self.debug:
+                    print(e)
                 ##TODO: when bus error are well handle we can skip out of place
         return self.scan(mask >> 4)
 
-    def findProduct(self,vendor_id,device_id, prods=None):
+    
+    def findProduct(self, vendor_id, device_id, prods=None):
         """
         Find SDB product according to vendor/device ID
 
@@ -377,22 +386,30 @@ class SDBNode():
             A list of all the device found that match the vendor/device ID
             We return a tupple with the (sdb structure,full_wb_address)
         """
-        if prods is None: prods = []
+        if prods is None:
+            prods = []
 
         for i in range(0,len(self.elements)):
             if self.elements[i][0].is_component():
                 e=self.elements[i][0].getTypedRecord()
                 prod=e.sdb_component.product
-                if self.debug: print "%x:%x => %x:%x" %( vendor_id, device_id, prod.vendor_id, prod.device_id)
-                if long(prod.vendor_id)==vendor_id and int(prod.device_id)==device_id:
-                    buspath="%s%d" %(self.buspath_prefix,i+1)
-                    if self.debug: print "Found Device %s %s: %x\n%s" %(buspath,prod.name,self.offset+e.sdb_component.addr_first,e)
-                    prods.append((e,self.offset+e.sdb_component.addr_first,buspath))
-            if self.elements[i][1]!=None:
-                self.elements[i][1].findProduct(vendor_id,device_id,prods)
+                if self.debug:
+                    print("%x:%x => %x:%x" %( vendor_id, device_id, prod.vendor_id, prod.device_id))
+                #if long(prod.vendor_id) == vendor_id and int(prod.device_id) == device_id:
+                if int(prod.vendor_id) == vendor_id and int(prod.device_id) == device_id:
+                    buspath = "%s%d" %(self.buspath_prefix, i+1)
+                    if self.debug:
+                        print("Found Device %s %s: %x\n%s" %(buspath,
+                                                             prod.name,
+                                                             self.offset+e.sdb_component.addr_first,
+                                                             e))
+                    prods.append((e, self.offset+e.sdb_component.addr_first, buspath))
+            if self.elements[i][1] != None:
+                self.elements[i][1].findProduct(vendor_id, device_id, prods)
         return prods
 
-    def ls(self,verbose=False):
+    
+    def ls(self, verbose=False):
         """
         List all the sdb peripheral
 
@@ -401,9 +418,9 @@ class SDBNode():
         """
         if verbose==True:
             self.ls_full()
-            print ""
+            print()
         else:
-            print "%-14s %16s %-8s  %16s  %s" %("BusPath","VendorID","ProdID","BaseAddr (Hex)", "Description")
+            print("%-14s %16s %-8s  %16s  %s" %("BusPath","VendorID","ProdID","BaseAddr (Hex)", "Description"))
             self.ls_brief()
 
     def ls_full(self):
@@ -412,12 +429,12 @@ class SDBNode():
         prefix=fmt %("")
 
         if self.level>0: self._print_indent("|\n+++|",nspaces-3)
-        print "%s+=== Interconnect %s0 (@0x%08x)" % (prefix, self.buspath_prefix,self.base)
-        print "%s|" %(prefix)
+        print("%s+=== Interconnect %s0 (@0x%08x)" % (prefix, self.buspath_prefix,self.base))
+        print("%s|" %(prefix))
         self._print_indent(self.interconnect,nspaces, "|   ")
         for i in range(0,len(self.elements)):
-            print "%s|" %(prefix)
-            print "%s+--- Device %s%d" %(prefix,self.buspath_prefix,i+1)
+            print("%s|" %(prefix))
+            print("%s+--- Device %s%d" %(prefix,self.buspath_prefix,i+1))
             self._print_indent(self.elements[i][0],nspaces, "|   ")
             if self.elements[i][1]!=None:
                 self.elements[i][1].ls_full()
@@ -434,7 +451,7 @@ class SDBNode():
     @staticmethod
     def ls_oneline(e,offset,buspath=""):
         prod=e.sdb_component.product
-        print "%-14s %016x:%08x  %16x  %s" %(buspath,prod.vendor_id,prod.device_id,offset,prod.name)
+        print("%-14s %016x:%08x  %16x  %s" %(buspath,prod.vendor_id,prod.device_id,offset,prod.name))
 
 
     def readrecord(self,address,record):
@@ -466,7 +483,7 @@ class SDBNode():
             else:
                 tmp=(rd & 0x000000FF)
             pData[i]=tmp
-            #print "%d: 0x%x" %(i,pData[i])
+            #print("%d: 0x%x" %(i,pData[i]))
         return pData
 
 
@@ -480,4 +497,4 @@ class SDBNode():
             sep: The separator between space and text
         """
         s = "%s" % (obj)
-        print "\n".join((nspace * " ") + sep + i for i in s.splitlines())
+        print("\n".join((nspace * " ") + sep + i for i in s.splitlines()))

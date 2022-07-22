@@ -116,7 +116,7 @@ class SpiFlash:
         elif self.mode=="update":
             self.updateMode(mcs_file)
         else:
-            print "Not a valid Mode"
+            print("Not a valid Mode")
 
     def resetFlash(self):
         '''Method for reseting the Flash memory
@@ -142,14 +142,14 @@ class SpiFlash:
     def cidoMode(self):
         '''Method for performing the Check ID Only operation
         '''
-        print "Check ID Only mode"
+        print("Check ID Only mode")
         self.setFlashMode()
         self.endFlash()
 
     def voMode(self):
         '''Method for performing the Verify Only operation
         '''
-        print "Verify Only mode"
+        print("Verify Only mode")
         self.setFlashMode()
         self.endFlash()
 
@@ -182,7 +182,7 @@ class SpiFlash:
     def updateMode(self,mcs_file):
         '''Method for performing the Update operation
         '''
-        print "UPDATE mode"
+        print("UPDATE mode")
 
         f = open(mcs_file, "rb")
         lines=f.readlines()
@@ -193,8 +193,8 @@ class SpiFlash:
         self.linesToPackets(lines,flash_packets)
 
         if self.debug:
-            print "packets:", len(flash_packets)
-            print "len last paket", len(flash_packets[-1])
+            print("packets:", len(flash_packets))
+            print("len last paket", len(flash_packets[-1]))
 
         self.setFlashMode()
         self.eraseFlash()
@@ -203,7 +203,7 @@ class SpiFlash:
             self.endFlash()
         except Exception, e:
             wc=self.bus.read(self.baseFlash+self.RWC_offset)
-            print "Received words=%d (0x%08x), expected=%d" % (wc,wc,(len(flash_packets)-1)*self.PKTWORDS+len(flash_packets[-1]))
+            print("Received words=%d (0x%08x), expected=%d" % (wc,wc,(len(flash_packets)-1)*self.PKTWORDS+len(flash_packets[-1])))
             raise
 
 
@@ -211,7 +211,7 @@ class SpiFlash:
         '''Method that checks the development of the Flash memory erasure
         '''
         # wait for Erase OK
-        print "Erasing ",
+        print("Erasing ")
 
         status_reg=self.bus.read(self.baseFlash+self.SR_offset)
         EOK=(self.msk_EOK & int(status_reg))
@@ -233,16 +233,16 @@ class SpiFlash:
             sys.stdout.write(".")
             sys.stdout.flush()
         if EOK and self.debug:
-            print "Erase OK"
+            print("Erase OK")
         elif self.debug:
-            print "Erase Failed"
+            print("Erase Failed")
 
 
     def programFlash(self,flash_packets):
         '''Method for sending the update data to the Flash memory
         '''
         j= 0
-        print " Programming ",
+        print(" Programming ")
         status_reg=self.bus.read(self.baseFlash+self.SR_offset)
         POK=(self.msk_POK & int(status_reg))
         ERROR=(self.msk_ERR & int(status_reg))
@@ -271,15 +271,15 @@ class SpiFlash:
                     break
 
         if self.debug:
-            print "Programming Finished (CRC=0x%08x)" %(self.bus.wcrc & 0xFFFFFFFF)
-            print "Packets Written:", j
+            print("Programming Finished (CRC=0x%08x)" %(self.bus.wcrc & 0xFFFFFFFF))
+            print("Packets Written:", j)
 
     def endFlash(self):
         '''Method for finishing the operation, regardless of the operation mode.
 
         If performing Update operation the board is Rebooted at the end runing IPROG_reboot
         '''
-        if self.debug:  print "Waiting DONE... %s" %(self.SR_to_str())
+        if self.debug:  print("Waiting DONE... %s" %(self.SR_to_str()))
         status_reg=self.bus.read(self.baseFlash+self.SR_offset)
         DONE=(self.msk_DN & int(status_reg))
         old_SR=status_reg
@@ -288,16 +288,16 @@ class SpiFlash:
             status_reg=self.bus.read(self.baseFlash+self.SR_offset)
             DONE=(self.msk_DN & int(status_reg))
             if status_reg != old_SR:
-                if self.debug:  print self.SR_to_str()
+                if self.debug:  print(self.SR_to_str())
                 old_SR=status_reg
                 count=0
             if count > self.ENDPRGM_TO:
                 raise  NameError('Timeout while waiting DONE > %d s (%s)' % (self.ENDPRGM_TO,self.SR_to_str()))
             time.sleep(1)
             count=count+1
-        print " DONE"
+        print(" DONE")
         if self.debug:
-            print self.SR_to_str()
+            print(self.SR_to_str())
 
         ERROR=(self.msk_ERR & int(status_reg))
         PSWOK=(self.msk_PSWOK & int(status_reg))
@@ -306,7 +306,7 @@ class SpiFlash:
             raise NameError("An error was detected %s" % (self.SR_to_str(status_reg & 0xF8)))
 
         if PSWOK:
-            print "REBOOTING"
+            print("REBOOTING")
             self.IPROG_reboot()
 
 
@@ -410,11 +410,11 @@ class SpiFlash:
         self.bus.wordsToPackets(flash_words,flash_packets,self.PKTWORDS)
 
         if self.debug:
-            print "lines:", len(lines)
-            print "Data lines:", len(data_lines)
-            print "Byte Arrays:", len(bytearray_lines)
-            print "Bytes:",len(bytes_list)
-            print "words:", len(flash_words)
+            print("lines:", len(lines))
+            print("Data lines:", len(data_lines))
+            print("Byte Arrays:", len(bytearray_lines))
+            print("Bytes:",len(bytes_list))
+            print("words:", len(flash_words))
 
         return flash_packets
 
@@ -440,7 +440,7 @@ class SpiFlash:
         for i in range(0, len(lines)):
             tmp_line=lines[i][len(lines[i])-9:len(lines[i])-1]
             data_lines.append(tmp_line)
-        print data_lines[1]
+        print(data_lines[1])
 
         #Convert from str to int
         int_lines=[]
@@ -474,10 +474,12 @@ class SpiFlash:
 
         error=False
         if len(list1) != len(list2):
-            print "Different list sizes", len(list1) , len(list2)
+            print("Different list sizes", len(list1) , len(list2))
         else:
             for i in range(0,len(list1)):
                 if list1[i]!=list2[i]:
                     error=True
                     break
         return error
+
+    

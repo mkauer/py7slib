@@ -33,7 +33,7 @@ File with generic abstract class for bus access
 import abc
 import os
 from ctypes import *
-
+#import ctypes
 
 class BusException(Exception):
     pass
@@ -63,7 +63,7 @@ class GenDrvr(object):
     ndev=1 ##Actual number detected device on the bus
 
 
-    def load_lib(self,libname=""):
+    def load_lib(self, libname=""):
         ## First set library path
         libpath = os.getenv('LD_LIBRARY_PATH')
         here = os.getcwd()
@@ -71,8 +71,9 @@ class GenDrvr(object):
         os.environ['LD_LIBRARY_PATH'] = libpath
 
         ##Then load the library
-        self.libname=libname
+        self.libname = libname
         self.lib = cdll.LoadLibrary(self.libname)
+        #self.lib = ctypes.CDLL(self.libname)
 
 
 ###################### Abstract method that MUST be redefine                                           --

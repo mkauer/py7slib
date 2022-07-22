@@ -196,10 +196,10 @@ class Gennum(object):
 
 if __name__ == '__main__':
     g = Gennum()
-    print g.parse_addr('1a39:0004/1a39:0004@0020:0000')
-    print g.bind('1a39:0004/1a39:0004@0020:0000')
-    print '%x' % g.write(bar=RR_BAR_4, offset=0xa08, width=4, datum=0xdeadface)
-    print '%x' % g.read(bar=RR_BAR_4, offset=0xa08, width=4)
-    print g.getdmasize()
+    print(g.parse_addr('1a39:0004/1a39:0004@0020:0000'))
+    print(g.bind('1a39:0004/1a39:0004@0020:0000'))
+    print('%x' % g.write(bar=RR_BAR_4, offset=0xa08, width=4, datum=0xdeadface))
+    print('%x' % g.read(bar=RR_BAR_4, offset=0xa08, width=4))
+    print(g.getdmasize())
     for page in g.getplist():
-        print '%08x ' % (page<<12),
+        print('%08x ' % (page<<12),)

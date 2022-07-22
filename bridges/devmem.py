@@ -64,14 +64,14 @@ class DevMem(GenDrvr):
         '''Do nothing
         '''
         if self.verbose:
-            print "opened"
+            print("opened")
 
 
     def close(self):
         '''Do nothing
         '''
         if self.verbose:
-            print "closed"
+            print("closed")
 
     def devread(self, bar, offset, width):
         '''Method that do a read on the devices using /dev/mem device
@@ -83,7 +83,7 @@ class DevMem(GenDrvr):
         '''
         ret=subprocess.check_output(["devmem","0x%08X" %(bar+offset), "%d" %(width*8)]).rstrip()
         if self.verbose:
-            print "%s (devmem 0x%08X)" % (ret, bar+offset)
+            print("%s (devmem 0x%08X)" % (ret, bar+offset))
         return c_uint(int(ret,0)).value;
 
 
@@ -100,7 +100,7 @@ class DevMem(GenDrvr):
         #print "0x%x => 0x%x" % (datum, data.value)
         cmd="devmem 0x%08X %d 0x%08x" %(bar+offset, width*8,data.value)
         if self.verbose:
-            print cmd
+            print(cmd)
         ret=os.system(cmd)
         if ret !=0:
             raise BusException("Bad return while Writing @ 0x%x \n(%s)" %(bar+offset,cmd))

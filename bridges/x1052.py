@@ -59,7 +59,7 @@ class X1052(GenDrvr):
         if self.errno!=0:
             raise NameError("Could not init X1052 (#%d)" %(self.errno))
 
-        if self.show_dbg: print self.info()+"\n"
+        if self.show_dbg: print(self.info()+"\n")
         self.open(LUN)
 
     def open(self, LUN):
@@ -94,7 +94,7 @@ class X1052(GenDrvr):
         data = c_uint(0xBADC0FFE)
         pData = cast(addressof(data), INTP)
         ret=self.lib.X1052_Wishbone_CSR(self.hdev,c_uint(address),pData,0)
-        if self.show_dbg: print "R@x%08X > 0x%08x" %(address, pData[0])
+        if self.show_dbg: print("R@x%08X > 0x%08x" %(address, pData[0]))
         if ret !=0:
             raise NameError('Bad Wishbone Read')
         return pData[0]
@@ -114,7 +114,7 @@ class X1052(GenDrvr):
         INTP = POINTER(c_uint)
         data = c_uint(datum)
         pData = cast(addressof(data), INTP)
-        if self.show_dbg: print "W@x%08X < 0x%08x" %( address, pData[0])
+        if self.show_dbg: print("W@x%08X < 0x%08x" %( address, pData[0]))
         ret=self.lib.X1052_Wishbone_CSR(self.hdev,c_uint(address),pData,1)
         if ret !=0:
             raise NameError('Bad Wishbone Write @0x%08x > 0x%08x (ret=%d)' %(address,datum, ret))
