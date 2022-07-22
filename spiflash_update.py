@@ -62,7 +62,7 @@ def main():
            # bus = wb_UART()
             #bus.open(options.lun)
     except BusException as e:
-        print "Fatal: %s" % (e)
+        print("Fatal: %s" % (e))
         return 1
 
     sdb = SDBNode(bus, None)

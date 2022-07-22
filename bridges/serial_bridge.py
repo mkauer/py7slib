@@ -33,10 +33,10 @@ import cmd
 from wx import OutBottom
 
 from bridges.consolebridge import ConsoleBridge
-from serial_linux import *
-from serial_windows import *
+from bridges.serial_linux import *
+from bridges.serial_windows import *
 from core.p7sException import *
-from core.gendrvr import BusCritical, BusWarning
+from core.gendrvr import *
 
 class SerialBridge(ConsoleBridge):
     '''
@@ -153,7 +153,7 @@ class SerialBridge(ConsoleBridge):
         clear the data in the read buffer of the Virtual UART
         '''
         if self.bus is None:
-            print "Error in flushInput function"
+            print("Error in flushInput function")
             #raise algo
         else:
             if self.verbose:
@@ -172,7 +172,7 @@ class SerialBridge(ConsoleBridge):
             Outputs a list of str from WR-LEN.
         '''
         out = self.bus.cmd_w(cmd, buffered)
-        #print out
+        #print(out)
         return out
 
 

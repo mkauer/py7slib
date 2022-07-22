@@ -659,7 +659,7 @@ def main():
     try:
         source = open(args[0]).read()
     except Exception, e:
-        print e
+        print(e)
         parser.print_help()
         sys.exit(2)
     # Minify our input script
@@ -675,7 +675,7 @@ def main():
         f.write(result)
         f.close()
     else:
-        print result
+        print(result)
 
 if __name__ == "__main__":
     main()

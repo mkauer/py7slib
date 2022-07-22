@@ -82,7 +82,7 @@ class SerialLinux(ConsoleBridge) :
             timeout=self.RDTIMEOUT, writeTimeout=self.WRTIMEOUT, interCharTimeout=self.INTERCHARTIMEOUT)
             self._serial.flushOutput()
             if self.verbose :
-                print ("Port %s succesfully opened " % (self.PORT))
+                print("Port %s succesfully opened " % (self.PORT))
         except ValueError as e:
             msg = "Error opening serial port %s" % (self.PORT)
             raise Error(self.errno.EBADIP, msg)
@@ -96,7 +96,7 @@ class SerialLinux(ConsoleBridge) :
         '''
         self._serial.close()
         if self.verbose :
-            print ("Port %s succesfully closed " % self.PORT)
+            print("Port %s succesfully closed " % self.PORT)
 
 
     def flushInput(self) :
@@ -154,8 +154,7 @@ class SerialLinux(ConsoleBridge) :
 
                 if bwr != len(cmd):
                     if ntries <= 0 :
-                        raise Retry("Write of command string '%s' failed. \
-                        Bytes writed : %d of %d." % (cmd, bwr,len(cmd)))
+                        raise Retry("Write of command string '%s' failed. Bytes writed : %d of %d." % (cmd, bwr,len(cmd)))
                     else : read_ok = False
 
                 time.sleep(self.WRTIMEOUT)
@@ -169,8 +168,7 @@ class SerialLinux(ConsoleBridge) :
                 # Remember: '\r' is inserted to cmd
                 if cmd[:-1] != clean :
                     if ntries <= 0:
-                        raise Retry("Write of command %s failed : '%s'" \
-                        % (cmd, clean))
+                        raise Retry("Write of command %s failed : '%s'" % (cmd, clean))
                     else : read_ok = False
 
                 rd = self._serial.readline()

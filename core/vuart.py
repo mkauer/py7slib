@@ -31,11 +31,20 @@ import sys
 import time
 import select
 import datetime as dt
+
+# py2/py3 compat
+try:
+    input = raw_input
+except NameError:
+    pass
+
+
 # User defined modules
-from py7slib.bridges.VUART_bridge import VUART_bridge
-from gendrvr import BusCritical, BusWarning
-from p7sException import p7sException, Retry, Error
-from ewberrno import Ewberrno
+from bridges.VUART_bridge import VUART_bridge
+from core.gendrvr import BusCritical, BusWarning
+from core.p7sException import *
+from core.ewberrno import Ewberrno
+
 
 class VUART_shell():
     '''
@@ -104,14 +113,19 @@ class VUART_shell():
             ConsoleError : When the specified device fails opening.
         '''
         self.vuart = VUART_bridge("eth", ip, verbose)
+        if verbose: print('Openning vuart bridge...')
+        
         attemps = 3
         cur = 0
         while True:
             try:
                 self.vuart.open()
+                if verbose: print('VUART is now open')
                 break
             except BusWarning as e:
+                print(e)
                 if cur >= attemps:
+                    #print(e)
                     raise e
                 print("The desired device cannot be connected, retrying...")
                 cur += 1
@@ -121,7 +135,8 @@ class VUART_shell():
         self.gui_enabled = False
         self.refresh = 5  # Refresh time for interactive commands (1 sec)
         ver = self.vuart.sendCommand("ver")
-        self.__get_firm_date__(ver.decode('utf8', errors='ignore'))
+        #self.__get_firm_date__(ver.decode('utf8', errors='ignore'))
+        self.__get_firm_date__(ver)
 
         # Compile regular expresions
         self.mode_regex = re.compile(self.MODE_REGEX)
@@ -140,6 +155,7 @@ class VUART_shell():
         self.psetp_regex = re.compile(self.PSETP_REGEX)
         self.ss_regex = re.compile(self.SS_REGEX)
 
+        
     def __secure_sendCommand__(self, cmd, retry=3):
         '''
         Wrapper for the VUART_bridge.sendCommand
@@ -167,8 +183,10 @@ class VUART_shell():
                     raise Error(Ewberrno.EIO , "Too many errors executing the command %s" % cmd)
                 else:
                     attempts += 1
-                if attempts == 1: print ("The connection seems to be lost. Retrying...")
+                if attempts > 1:
+                    print("The connection seems to be lost. Retrying...")
 
+                
     def __get_firm_date__(self, raw_ver):
         '''
         Private method to fill the firmware build date
@@ -193,6 +211,7 @@ class VUART_shell():
         else:
             self.gui_enabled = False
 
+            
     def __format_gui__(self, stat, time):
         '''
         Private method to format an output as the WRPC GUI does.
@@ -204,8 +223,10 @@ class VUART_shell():
             time (str) : Raw data from time command
         '''
         sync_info_valid = 2
-        raw = stat.decode('utf8')
-        time =  time.decode('utf8')
+        #raw = stat.decode('utf8')
+        #time = time.decode('utf8')
+        raw = stat
+        time = time
         board_mode = self.mode_regex.search(raw).group(0)
 
         if board_mode is None:
@@ -302,22 +323,33 @@ class VUART_shell():
         elif sync_info_valid < 2 or show_fail:
             sys.stdout.write("\033[1;31mMaster mode or sync info not valid\033[0m\n\n")
 
+            
     def run(self):
         '''
         Open the interactive shell
         '''
-        self.vuart.flushInput()
+        # vuart input flushed already at open()
+        #self.vuart.flushInput()
         sys.stdout.write("\033[1m\nVirtual UART shell for the White Rabbit LEN board\033[0m (v1.0)\n\n")
         self.print_stats()
         sys.stdout.write("Type \033[1m_help\033[0m to show the help info\n\n")
 
         while(True):
             sys.stdout.write("\033[1mwrc# \033[0m")
-            cmd = str(raw_input())
-            if cmd == "_exit" :
-                print("Bye!")
+            try:
+                cmd = str(input())
+            except KeyboardInterrupt:
+                #sys.stdout.write("\033[0mExiting...\n")
+                #return
+                #print("\nBye!")
                 exit(0)
-            elif cmd == "_help"     : self.help()
+                
+            if cmd in ["_exit", "exit", "quit", "logout"]:
+                #print("Bye!")
+                exit(0)
+                
+            elif cmd == "_help":
+                self.help()
 
             elif "_load" in cmd     :
                 params = cmd.split(" ")
@@ -331,7 +363,7 @@ class VUART_shell():
                     fin.close()
                     if len(params) > 2: fout.close()
                 except Exception as e:
-                    print e
+                    print(e)
 
             elif "_refresh" in cmd  :
                 param = cmd.split(" ")
@@ -341,20 +373,25 @@ class VUART_shell():
                     print("Refresh rates lower than 3 secs are not advisable")
                     continue
                 self.set_refresh(float(param[1]))
-            elif cmd == "_ver"      : self.ver_info()
+                
+            elif cmd == "_ver":
+                self.ver_info()
+                
             elif cmd == "gui" or "stat cont" in cmd:
                 self.run_interactive(cmd)
+                
             else:
                 # ret = self.vuart.sendCommand(cmd)
                 try:
                     ret = self.__secure_sendCommand__(cmd,4)
                 except Error as e:
                     sys.stdout.write("\033[1;31mError:\033[0mConnection with the WR-LEN is lost\n")
-                    print ("See the manual for more deatils")
+                    #print("See the manual for more deatils")
                     exit(1)
                 if ret == "" : continue
-                else: print ret
+                else: print(ret)
 
+                
     def run_script(self, script, saveto=None):
         '''
         Execute a bunch of WRPC commands.
@@ -376,14 +413,14 @@ class VUART_shell():
 
         for line in script:
             if "gui" in line or "stat cont" in line:
-                print ("Not allowed command %s" % (line))
+                print("Not allowed command %s" % (line))
                 continue
             # ret = self.vuart.sendCommand(line)
             try:
                 ret = self.__secure_sendCommand__(line[:-1]) # Don't forget: read lines from file end in '\n'
             except Error as e:
                 sys.stdout.write("\033[1;31mError:\033[0mConnection with the WR-LEN is lost\n")
-                print ("See the manual for more deatils")
+                print("See the manual for more deatils")
                 return
 
             if saveto is not None:
@@ -393,6 +430,7 @@ class VUART_shell():
         if saveto is not None:
             saveto.write("\n\n")
 
+            
     def run_interactive(self, cmd):
         '''
         Special method for handling special WRPC interactive commands as GUI or STAT CONT
@@ -417,7 +455,7 @@ class VUART_shell():
                         raw_time = self.vuart.sendCommand("time")
                     except Error as e:
                         sys.stdout.write("\033[1;31mError:\033[0mConnection with the WR-LEN is lost\n")
-                        print ("See the manual for more deatils")
+                        #print("See the manual for more deatils")
                         return
                     self.__format_gui__(raw_stat, raw_time)
                     time.sleep(self.refresh)
@@ -430,16 +468,20 @@ class VUART_shell():
                         ret = self.vuart.sendCommand(cmd)
                     except Error as e:
                         sys.stdout.write("\033[1;31mError:\033[0mConnection with the WR-LEN is lost\n")
-                        print ("See the manual for more deatils")
+                        #print("See the manual for more deatils")
                         return
                     print(ret)
-                    self.vuart.flushInput()
+                    #self.vuart.flushInput()
                     time.sleep(self.refresh)
 
         except KeyboardInterrupt:
-            sys.stdout.write("\033[0mExiting...\n")
+            #sys.stdout.write("\033[0mExiting...\n")
+            
+            # flush the read buffer, I notice leftovers spilling into the next command
+            self.vuart.flushInput()
             return
 
+        
     def ver_info(self):
         '''
         Method to print info about enabled capabilites of the VUART"
@@ -451,6 +493,7 @@ class VUART_shell():
         else:
             print("The firmware version of the WR-LEN fully supports the Virtual UART capabilities")
 
+            
     def print_stats(self):
         '''
         Method to print some info about the device and connection established
@@ -459,11 +502,12 @@ class VUART_shell():
             ver = self.vuart.sendCommand("ver")
         except Error as e:
             sys.stdout.write("\033[1;31mError:\033[0mConnection with the WR-LEN is lost\n")
-            print ("See the manual for more deatils")
+            print("See the manual for more deatils")
             exit(1)
         sys.stdout.write("\033[1m\nBoard info:\033[0m\n\n")
         print("%s\n\n" % (ver))
 
+        
     def set_refresh(self, value):
         '''
         Method to change the refresh interval for interactive commands
@@ -476,15 +520,17 @@ class VUART_shell():
         else:
             self.refresh = value
 
+            
     def help(self):
         '''
         Show some info about the use of the shell
         '''
         print("""
 Special commands (not for the device, "_" preceding those commands):\n
-· _help : Prints this help
-· _ver  : Prints useful info about board version
-· _exit : Exits the shell
-· _load <filein> [<fileout>]: Loads an input file with WRPC commands
-· _refresh <value> : Change refresh interval. The value must be greater than 1.5 secs.
-Any other commands will be passed directly to the WR-LEN device.""")
+  _help : Prints this help
+   help : Prints available commands
+  _ver  : Prints useful info about board version
+  _exit, exit, quit, logout : Exits the shell (or ctrl+c) 
+  _load <filein> [<fileout>] : Loads an input file with WRPC commands
+  _refresh <value> : Change refresh interval. The value must be greater than 1.5 secs.
+""")

@@ -123,7 +123,7 @@ class WBOperator(object):
         data=self.read(offset)
         mask=pow(2,width)-1 << position
         data= (data & ~mask) | ((val << position) & mask)
-        #print '@0x%03x < val=0x%08x (val=%d, pos=%d, mask=%08X, width=%d)' % (offset, data, val, position,mask, width)
+        #print('@0x%03x < val=0x%08x (val=%d, pos=%d, mask=%08X, width=%d)' % (offset, data, val, position,mask, width))
         self.write(offset,data)
 
 

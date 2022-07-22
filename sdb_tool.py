@@ -54,10 +54,10 @@ def main():
             bus = wb_UART(plog)
             bus.open(args.lun)
         else:
-            print "Unknown bus"
+            print("Unknown bus")
             return
     except BusException, e:
-        print "Fatal: %s" % (e)
+        print("Fatal: %s" % (e))
 
     ##TODO: add sdb to detect where we should load on any bus.
 
@@ -74,7 +74,7 @@ def main():
             SDBNode.ls_oneline(p[0],p[1],p[2])
 
 
-    print ""
+    print()
 
 if __name__ == '__main__':
     main()

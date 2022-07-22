@@ -87,7 +87,7 @@ class SerialWindows(ConsoleBridge) :
             timeout=self.RDTIMEOUT, writeTimeout=self.WRTIMEOUT, interCharTimeout=self.INTERCHARTIMEOUT)
             self._serial.flushOutput()
             if self.verbose :
-                print ("Port %s succesfully opened " % (self.PORT))
+                print("Port %s succesfully opened " % (self.PORT))
         except ValueError as e:
             msg = "Error opening serial port %s" % (self.PORT)
             raise Error(errno.EBADIP, msg)
@@ -102,7 +102,7 @@ class SerialWindows(ConsoleBridge) :
         '''
         self._serial.close()
         if self.verbose :
-            print ("Port %s succesfully closed " % self.PORT)
+            print("Port %s succesfully closed " % self.PORT)
 
 
     def flushInput(self) :

@@ -32,10 +32,10 @@ def main():
 
     parser = arg.ArgumentParser(description='WR-LEN Software Loader v1.0')
 
-    parser.add_argument('--bus','-b',help='communication bus', choices=['EB','UART'],\
-    required=True)
-    parser.add_argument('--lun','-l',help='Logical unit Number (SerialPort / IP)',\
-    type=str, required=True)
+    parser.add_argument('--bus','-b',help='communication bus',
+                        choices=['EB','UART'], required=True)
+    parser.add_argument('--lun','-l',help='Logical unit Number (SerialPort / IP)',
+                        type=str, required=True)
     parser.add_argument('--file','-f',help="RAM file",required=True)
     parser.add_argument('--debug','-d',help="Enable debug output",action='store_true')
 
@@ -48,7 +48,7 @@ def main():
            # bus = wb_UART()
             #bus.open(options.lun)
     except BusException, e:
-        print "Fatal: %s" % (e)
+        print("Fatal: %s" % (e))
 
 
     flash=SpiFlash(bus, None, args.debug)
