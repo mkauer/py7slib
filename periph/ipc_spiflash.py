@@ -65,17 +65,18 @@ class SpiFlash:
 
     #FSR
     msk_RST_N=0x80000000 #RESET FIFO Active low reset
-    msk_WF=0x200        #Write Full
-    msk_FSR_RE=0x100    #Read Empty
-    msk_WC=0xFF         #Write Count
+    msk_WF=0x200         #Write Full
+    msk_FSR_RE=0x100     #Read Empty
+    msk_WC=0xFF          #Write Count
 
-    ERASE_TO=50         #Maximun number of seconds to check timeout
-    ENDPRGM_TO=10       #Maximun number of seconds to check end programs
+    ERASE_TO=50          #Maximun number of seconds to check timeout
+    ENDPRGM_TO=10        #Maximun number of seconds to check end programs
 
-    FIFO_WSIZE=256
-    PKTWORDS=FIFO_WSIZE/2 #We are sending packets of 128 words because the FIFO has 256 words
+    FIFO_WSIZE=256       #FIFO has 256 words
+    PKTWORDS=int(FIFO_WSIZE/2) #We are sending packets of 128 words because the FIFO has 256 words
 
-    def __init__(self,bus,baseFlash,debug=False):
+    
+    def __init__(self, bus, baseFlash, debug=False):
         """__init__ method
 
         Args:
@@ -86,9 +87,11 @@ class SpiFlash:
 
         self.baseFlash = baseFlash
         self.bus = bus
-        self.debug=debug
+        self.debug = debug
+        #self.debug = True
 
-    def flash_update(self,mode,mcs_file):
+        
+    def flash_update(self, mode, mcs_file):
         '''Main Method for starting the SPI Flash operation
 
         This method resets the needed modules,sets the operation mode and calls the methods to perform it.
@@ -118,11 +121,13 @@ class SpiFlash:
         else:
             print("Not a valid Mode")
 
+            
     def resetFlash(self):
         '''Method for reseting the Flash memory
         '''
         self.bus.devwrite( 0, self.baseFlash+self.CR_offset, 4, self.mod_RESET)
 
+        
     def setFlashMode(self):
         '''Method for seting the operation mode of the SpiFlashProgrammer
         '''
@@ -133,12 +138,14 @@ class SpiFlash:
         elif self.mode=="update":
             self.bus.devwrite( 0, self.baseFlash+self.CR_offset, 4, self.mod_UPDATE)
 
+            
     def resetFifo(self):
         '''Method for resetting the FIFO
         '''
         self.bus.devwrite( 0, self.baseFlash+self.FSR_offset, 4, 0x00000000)
         self.bus.devwrite( 0, self.baseFlash+self.FSR_offset, 4, 0x80000000)
 
+        
     def cidoMode(self):
         '''Method for performing the Check ID Only operation
         '''
@@ -146,6 +153,7 @@ class SpiFlash:
         self.setFlashMode()
         self.endFlash()
 
+        
     def voMode(self):
         '''Method for performing the Verify Only operation
         '''
@@ -153,6 +161,7 @@ class SpiFlash:
         self.setFlashMode()
         self.endFlash()
 
+        
     def SR_to_str(self,status_reg=None):
             if status_reg==None:
                 status_reg=self.bus.read(self.baseFlash+self.SR_offset)
@@ -179,29 +188,33 @@ class SpiFlash:
                     msg=msg+val+", "
             return msg[:-2]
 
-    def updateMode(self,mcs_file):
+        
+    def updateMode(self, mcs_file):
         '''Method for performing the Update operation
         '''
         print("UPDATE mode")
 
         f = open(mcs_file, "rb")
-        lines=f.readlines()
+        lines = f.readlines()
 
-        #this function selects the useful lines, extracts the 32 bit data from each of those lines and returns a list of packets
-        #of 128 words of 32 bits.
-        flash_packets=[]
-        self.linesToPackets(lines,flash_packets)
+        # this function selects the useful lines,
+        # extracts the 32 bit data from each of those
+        # lines and returns a list of packets
+        # of 128 words of 32 bits.
+        flash_packets = []
+        self.linesToPackets(lines, flash_packets)
 
         if self.debug:
-            print("packets:", len(flash_packets))
-            print("len last paket", len(flash_packets[-1]))
+            print('updateMode()')
+            print("num packets:", len(flash_packets))
+            print("last packet length:", len(flash_packets[-1]))
 
         self.setFlashMode()
         self.eraseFlash()
         self.programFlash(flash_packets)
         try:
             self.endFlash()
-        except Exception, e:
+        except Exception as e:
             wc=self.bus.read(self.baseFlash+self.RWC_offset)
             print("Received words=%d (0x%08x), expected=%d" % (wc,wc,(len(flash_packets)-1)*self.PKTWORDS+len(flash_packets[-1])))
             raise
@@ -211,7 +224,7 @@ class SpiFlash:
         '''Method that checks the development of the Flash memory erasure
         '''
         # wait for Erase OK
-        print("Erasing ")
+        print("Erasing")
 
         status_reg=self.bus.read(self.baseFlash+self.SR_offset)
         EOK=(self.msk_EOK & int(status_reg))
@@ -224,56 +237,68 @@ class SpiFlash:
             if self.debug:
                 new_SR=self.bus.read(self.baseFlash+self.SR_offset)
                 if new_SR != old_SR:
-                    print self.SR_to_str(new_SR)
+                    print(self.SR_to_str(new_SR))
                     old_SR=new_SR
             if count > self.ERASE_TO:
-                raise  NameError('Timeout while erasing SPI (> %d s)' % (self.ERASE_TO))
+                raise NameError('Timeout while erasing SPI (> %d s)' % (self.ERASE_TO))
             time.sleep(1)
             count=count+1
-            sys.stdout.write(".")
-            sys.stdout.flush()
+            #sys.stdout.write(".")
+            #sys.stdout.flush()
         if EOK and self.debug:
             print("Erase OK")
-        elif self.debug:
+        else:
             print("Erase Failed")
 
 
-    def programFlash(self,flash_packets):
+    def programFlash(self, flash_packets):
         '''Method for sending the update data to the Flash memory
         '''
-        j= 0
-        print(" Programming ")
-        status_reg=self.bus.read(self.baseFlash+self.SR_offset)
-        POK=(self.msk_POK & int(status_reg))
-        ERROR=(self.msk_ERR & int(status_reg))
-        old_SR=status_reg & 0xfffe                  #ready_busy switch is not interesting
-        self.bus.wrcr=0
-        while POK==0 and ERROR==0:
-            #Check Writing Done
-            status_reg=self.bus.read(self.baseFlash+self.SR_offset)
-            POK=(self.msk_POK & int(status_reg))
-            ERROR=(self.msk_ERR & int(status_reg))
-            #Check FIFO
-            FIFO_status_reg=self.bus.read(self.baseFlash+self.FSR_offset)
-            FCount=(self.msk_WC & int(FIFO_status_reg))
+        j = 0
+        print("Programming")
+        status_reg = self.bus.read(self.baseFlash+self.SR_offset)
+        POK = (self.msk_POK & int(status_reg))
+        ERROR = (self.msk_ERR & int(status_reg))
+        old_SR = status_reg & 0xfffe # ready_busy switch is not interesting
+        self.bus.wrcr = 0
+        while POK == 0 and ERROR == 0:
+            
+            # Check Writing Done
+            status_reg = self.bus.read(self.baseFlash+self.SR_offset)
+            POK = (self.msk_POK & int(status_reg))
+            ERROR = (self.msk_ERR & int(status_reg))
+            
+            # Check FIFO
+            FIFO_status_reg = self.bus.read(self.baseFlash+self.FSR_offset)
+            FCount = (self.msk_WC & int(FIFO_status_reg))
+            
+            #if self.debug:
+                #print(j, FCount, self.PKTWORDS)
+                #print(j, status_reg, POK, ERROR)
+                
             if (FCount < self.PKTWORDS):
-                if j<len(flash_packets):
-                    self.bus.devblockwrite(0, self.baseFlash+self.DR_offset, flash_packets[j],0x0)
-                    time.sleep(0.001) #Sleep 1 milliseconds to avoid charging the network
-                    j=j+1
-                    if j%100==0:
-                        sys.stdout.write(".")
-                        sys.stdout.flush()
-                elif (j>len(flash_packets)):
-                    raise  NameError('ERROR: Overflowing packets (%d > %d s)' % (j,len(flash_packets)))
+                if j < len(flash_packets):
+                    self.bus.devblockwrite(0, self.baseFlash+self.DR_offset, flash_packets[j], 0x0)
+                    time.sleep(0.001) # Sleep 1 milliseconds to avoid charging the network
+                    j = j+1
+                    #if j%100==0:
+                    #    sys.stdout.write(".")
+                    #    sys.stdout.flush()
+                        
+                elif (j > len(flash_packets)):
+                    raise NameError('ERROR: Overflowing packets (%d > %d s)' % (j,len(flash_packets)))
 
-                elif j==len(flash_packets):
+                elif j == len(flash_packets):
                     break
 
         if self.debug:
+            print('programFlash()')
+            print('POK =', POK, '\nERROR =', ERROR)
             print("Programming Finished (CRC=0x%08x)" %(self.bus.wcrc & 0xFFFFFFFF))
+            print('Number of Packers:', len(flash_packets))
             print("Packets Written:", j)
 
+            
     def endFlash(self):
         '''Method for finishing the operation, regardless of the operation mode.
 
@@ -292,10 +317,10 @@ class SpiFlash:
                 old_SR=status_reg
                 count=0
             if count > self.ENDPRGM_TO:
-                raise  NameError('Timeout while waiting DONE > %d s (%s)' % (self.ENDPRGM_TO,self.SR_to_str()))
+                raise NameError('Timeout while waiting DONE > %d s (%s)' % (self.ENDPRGM_TO,self.SR_to_str()))
             time.sleep(1)
             count=count+1
-        print(" DONE")
+        print("DONE")
         if self.debug:
             print(self.SR_to_str())
 
@@ -331,11 +356,11 @@ class SpiFlash:
         self.bus.devblockwrite(0, self.baseFlash+self.IIR_offset, iprog_comm,0x0)
         self.bus.silent=old_silent;
 
+        
     def swap(self,nsWord):
         '''Method for bit swapping a 32 bit word
         '''
         sWord=0
-
         sWord=sWord | (nsWord<<(7) &  0x80808080)
         sWord=sWord | (nsWord<<(5) &  0x40404040)
         sWord=sWord | (nsWord<<(3) &  0x20202020)
@@ -344,57 +369,81 @@ class SpiFlash:
         sWord=sWord | (nsWord>>(5) &  0x02020202)
         sWord=sWord | (nsWord>>(3) &  0x04040404)
         sWord=sWord | (nsWord>>(1) &  0x08080808)
-
         return sWord
 
-    def linesToData(self,lines_list,data_lines):
-        """ This method takes the lines from the mcs file and extracts the useful data
-
-        Returns a list of lines once removed start code, byte count, address, record type, checksum...
-        only the useful data is left
+    
+    def linesToData(self, lines_list, data_lines):
+        """ 
+        This method takes the lines from the mcs file and extracts 
+        the useful data. Returns a list of lines once removed start code, 
+        byte count, address, record type, checksum...
+        Only the useful data is left.
         """
 
-        for i in range(0,len(lines_list)-1):                         #the last line is left untouched as it is the checksum
-            record_type=int(lines_list[i][7:9],16)                   #two hex digits indicating the record type
-            if record_type==0:                                       # DATA type
-                mod_line= lines_list[i][9:len(lines_list[i])-3]      #take away the first 10 hex digits and the last 3
+        for i in range(0, len(lines_list)-1):                       # the last line is left untouched as it is the checksum
+            record_type = int(lines_list[i][7:9], 16)               # two hex digits indicating the record type
+            if record_type == 0:                                    # DATA type
+                mod_line = lines_list[i][9:len(lines_list[i])-3]    # take away the first 10 hex digits and the last 3
                 data_lines.append(mod_line)
+            else:
+                if self.debug: print('!!0', str(i).zfill(6), lines_list[i])
+                
         return data_lines
 
-    def linesToPackets(self,lines,flash_packets):
-        """Method for packing a list of lines of a MCS file into a list of packets of words
-
-        This method extract four 32 bit words for each usefull line of the mcs file and packs it in packets of 128 words of 32 bits
+    
+    def linesToPackets(self, lines, flash_packets):
         """
-
-        #lines once removed start code, byte count, address, record type, checksum...
-        #only the 32 bit useful data is left
-        data_lines=[]
-        self.linesToData(lines,data_lines)
-
+        Method for packing a list of lines of a MCS file into a list 
+        of packets of words. This method extract four 32 bit words for 
+        each usefull line of the mcs file and packs it in packets of 
+        128 words of 32 bits.
+        """
+        if self.debug: print('linesToPackets()')
+        if self.debug: print("Lines:", len(lines))
+        
+        # lines after removing the start code, byte count,
+        # address, record type, checksum...
+        # only the 32 bit useful data is left
+        data_lines = []
+        self.linesToData(lines, data_lines)
+        if self.debug: print("Data lines:", len(data_lines))
+        
         # turn the Data lines strings into byte arrays
-        bytearray_lines=[]
-        self.bus.dataToByteArray(data_lines,bytearray_lines)
-
-        # create a single list with all the  bytes
-        bytes_list=[]
+        bytearray_lines = []
+        self.bus.dataToByteArray(data_lines, bytearray_lines)
+        if self.debug: print("Byte Arrays:", len(bytearray_lines))
+        
+        # create a single list with all the bytes
+        subcount = 0
+        valcount = 0
+        bytes_list = []
         for sublist in bytearray_lines:
+            subcount += 1
             for val in sublist:
+                valcount += 1
                 bytes_list.append(val)
-
+                
+            if self.debug and subcount == 1:
+                print('sublist:', sublist)
+                print('bytes_list:', bytes_list)
+            
+        if self.debug: print('sublists:', subcount, 'values:', valcount)
+        if self.debug: print("Bytes:", len(bytes_list))
+        
         #for j in range(-10,0):
         #    print "0x%02x" % bytes_list[j]
 
-
         # Group the bytes into 4 Bytes words
-        flash_words=[]
-        for j in range(0,len(bytes_list),4):
+        flash_words = []
+        for j in range(0, len(bytes_list), 4):
             if (j<len(bytes_list)-(len(bytes_list)%4)):
-                tmpWord= (bytes_list[j]<<24 | bytes_list[j+1] << 16 | bytes_list[j+2] << 8 | bytes_list[j+3])
+                tmpWord = (bytes_list[j]<<24 | bytes_list[j+1] << 16 | bytes_list[j+2] << 8 | bytes_list[j+3])
                 flash_words.append(tmpWord)
-                #if j>(len(bytes_list)-4*10): print "@x%03x: 0x%08x" %(j, flash_words[-1] & 0xFFFFFFFF)
-
-            #the last word is completed with 0xee if needed
+                if self.debug and j>(len(bytes_list)-4*10):
+                    #print('!!1', "@x%03x: 0x%08x" %(j, flash_words[-1] & 0xFFFFFFFF))
+                    print('!!1', "%08d: 0x%08x" %(j, flash_words[-1] & 0xFFFFFFFF))
+                    
+            # the last word is completed with 0xee if needed
             else:
                 if len(bytes_list)%4==3:
                     last_word=(bytes_list[j]<<24 | bytes_list[j+1] << 16 | bytes_list[j+2] << 8 | 0xee)
@@ -403,19 +452,16 @@ class SpiFlash:
                 elif len(bytes_list)%4==1:
                     last_word=(bytes_list[j]<<24 | 0xee << 16 | 0xee << 8 | 0xee)
                 flash_words.append(last_word)
-                #print "@x%03x: 0x%08x" %(j, flash_words[-1] & 0xFFFFFFFF)
-
-
+                if self.debug:
+                    #print('!!2', "@x%03x: 0x%08x" %(j, flash_words[-1] & 0xFFFFFFFF))
+                    print('!!2', "%08d: 0x%08x" %(j, flash_words[-1] & 0xFFFFFFFF))
+                
+        if self.debug: print("Words:", len(flash_words))
+        
         # the 4 bytes words are grouped in self.PKTWORDS words packets
-        self.bus.wordsToPackets(flash_words,flash_packets,self.PKTWORDS)
-
-        if self.debug:
-            print("lines:", len(lines))
-            print("Data lines:", len(data_lines))
-            print("Byte Arrays:", len(bytearray_lines))
-            print("Bytes:",len(bytes_list))
-            print("words:", len(flash_words))
-
+        self.bus.wordsToPackets(flash_words, flash_packets, self.PKTWORDS)
+        if self.debug: print("Packets:", len(flash_packets))
+        
         return flash_packets
 
 
@@ -468,6 +514,7 @@ class SpiFlash:
         self.bus.devwrite(0, SYSCON_offset, 4, 0x0deadbee)
         return 0
 
+    
     def cmpList(self,list1,list2):
         '''Method for comparing two lists
         '''
