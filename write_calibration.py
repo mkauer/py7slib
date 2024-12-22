@@ -51,12 +51,10 @@ def main():
 
     parser = arg.ArgumentParser(description='EEPROM writing tool for WRCORE')
 
-    parser.add_argument('--bus','-b',help='Bus',choices=['ethbone','serial'], \
-    required=True)
-    parser.add_argument('--lun','-l',help='Logical Unit (IP/Serial Port)',type=str,required=True)
-    parser.add_argument('--input','-i',help='Input .ini file', type=str, required=True)
-    parser.add_argument('--debug','-d',help='Enable debug output',action="store_true", \
-    default=False)
+    parser.add_argument('--bus','-b', help='Bus', choices=['ethbone','serial'], required=True)
+    parser.add_argument('--lun','-l', help='Logical Unit (IP/Serial Port)', type=str, required=True)
+    parser.add_argument('--input','-i', help='Input .ini file', type=str, required=True)
+    parser.add_argument('--debug','-d', help='Enable debug output', action="store_true", default=False)
     args = parser.parse_args()
 
     if args.bus == 'ethbone':

@@ -1,3 +1,7 @@
+*~
 *.pyc
 bin/eb-discover
 lib/libetherbone.so
+wr-len-ips.txt
+wrc_2p_len-v4-20220711
+wrc_2p_len_v3_beta15-20181115

@@ -487,7 +487,7 @@ class EthBone(GenDrvr):
             raise BaseException("Error reading data block")
 
 
-    def dataToByteArray(self,data_list,bytearray_list=[]):
+    def dataToByteArray(self, data_list, bytearray_list=[]):
         '''
         Convert list of hexadecimal characters to byte array
 
@@ -498,16 +498,24 @@ class EthBone(GenDrvr):
         Returns:
             A list of bytearray for each lines
         '''
-
-        for line in data_list:
-            hex_line=line.decode("hex")
-            hex_array=bytearray(hex_line)
-            bytearray_list.append(hex_array)
-
+        
+        for line in (data_list):
+            # try old py2 way
+            try:
+                hex_line = line.decode("hex")
+            # new py3 way - mkauer 2024-12-22
+            except:
+                hex_line = b""
+                for i in range(0, len(line), 2):
+                    hex_line += bytes(int(line[i:i+2], 16).to_bytes(1, 'big'))
+            
+            hex_array = bytearray(hex_line)
+            bytearray_list.append((hex_array))
+            
         return bytearray_list
 
 
-    def wordsToPackets(self,data_words,data_packets=[],packetLen=128):
+    def wordsToPackets(self, data_words, data_packets=[], packetLen=128):
         '''Pack a list of words into a list of packets
 
         Args:
@@ -518,6 +526,8 @@ class EthBone(GenDrvr):
         Returns:
             The list of data packets composed of {packetLen x 32bit words}
         '''
+
+        packetLen = int(packetLen)
         # the 4 bytes words are grouped in "packetLen" words packets
         for i in range(0,len(data_words),packetLen):
             if i<(len(data_words)-len(data_words)%packetLen):
@@ -531,6 +541,7 @@ class EthBone(GenDrvr):
                 for l in range(0,len(data_words)%packetLen):
                     last_packet.append(data_words[i+l])
                 data_packets.append(last_packet)
+                
         return data_packets
 
 
