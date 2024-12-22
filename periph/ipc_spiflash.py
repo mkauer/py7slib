@@ -245,7 +245,7 @@ class SpiFlash:
             count=count+1
             #sys.stdout.write(".")
             #sys.stdout.flush()
-        if EOK and self.debug:
+        if EOK:
             print("Erase OK")
         else:
             print("Erase Failed")
